@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Desafio Invictos — Cadastro</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="auth.css">
+</head>
+
+<body class="auth-page">
+
+<div class="auth-wrapper">
+
+  <div class="auth-hero">
+    <h1>🏆 Desafio Invictos</h1>
+    <p>Crie sua conta e entre no desafio</p>
+  </div>
+
+  <div class="auth-card">
+
+    <div class="wizard-steps">
+      <div class="wizard-step ativo" id="dot1"></div>
+      <div class="wizard-step" id="dot2"></div>
+      <div class="wizard-step" id="dot3"></div>
+    </div>
+
+    <!-- ETAPA 1 -->
+    <div id="step1" class="step">
+      <h2>Conta</h2>
+      <input id="nome" placeholder="Nome">
+      <input id="sobrenome" placeholder="Sobrenome">
+      <input id="username" placeholder="Nome de usuário">
+      <input id="email" placeholder="Email">
+      <div class="password-wrapper">
+  <input id="senha" type="password" placeholder="Senha">
+  <span id="toggleSenha" class="toggle-senha">👁️</span>
+</div>
+      <div id="senhaRegra" class="senha-regra">
+  A senha deve ter no mínimo 6 caracteres, com ao menos:
+  <br>• 1 letra maiúscula
+  <br>• 1 letra minúscula
+  <br>• 1 número
+  <br>• 1 caractere especial (@$!%*?&)
+</div>
+    </div>
+
+    <!-- ETAPA 2 -->
+    <div id="step2" class="step hidden">
+      <h2>Dados pessoais</h2>
+     <input id="cpf" placeholder="CPF" maxlength="14">
+      <input id="dataNascimento" type="date">
+
+      <select id="genero">
+        <option value="">Gênero</option>
+        <option value="masculino">Masculino</option>
+        <option value="feminino">Feminino</option>
+        <option value="outro">Outro</option>
+        <option value="prefiro_nao_informar">Prefiro não informar</option>
+      </select>
+    </div>
+
+    <!-- ETAPA 3 -->
+    <div id="step3" class="step hidden">
+      <h2>Perfil do jogo</h2>
+
+      <select id="timeCoracao">
+        <option value="">Time do coração</option>
+        <option>Palmeiras</option>
+        <option>Flamengo</option>
+        <option>Corinthians</option>
+        <option>São Paulo</option>
+        <option>Grêmio</option>
+        <option>Internacional</option>
+        <option>Cruzeiro</option>
+        <option>Atlético-MG</option>
+        <option>Santos</option>
+        <option>Botafogo</option>
+        <option>Fluminense</option>
+        <option>Vasco</option>
+      </select>
+
+    
+    </div>
+
+    <div class="wizard-actions">
+      <button class="auth-btn" id="btnPrev" onclick="prevStep()" style="background:#E5E7EB;color:#111;">
+        Voltar
+      </button>
+
+      <button class="auth-btn" id="btnNext" onclick="nextStep()">
+        Continuar
+      </button>
+    </div>
+
+    <div class="auth-error" id="erro"></div>
+    <div class="auth-success" id="sucesso"></div>
+
+  </div>
+</div>
+
+<script>
+let step = 1;
+
+function updateSteps() {
+  [step1, step2, step3].forEach(el => {
+    el.classList.add("hidden");
+    el.classList.remove("step");
+  });
+
+  const atual = document.getElementById(`step${step}`);
+  atual.classList.remove("hidden");
+
+  void atual.offsetWidth; // força reflow
+  atual.classList.add("step");
+
+  dot1.classList.toggle("ativo", step === 1);
+  dot2.classList.toggle("ativo", step === 2);
+  dot3.classList.toggle("ativo", step === 3);
+
+  btnPrev.style.opacity = step === 1 ? "0.6" : "1";
+  btnNext.textContent = step === 3 ? "Criar conta" : "Continuar";
+}
+
+
+function nextStep() {
+  erro.textContent = "";
+
+if (step === 1) {
+  const campos = [nome, sobrenome, username, email, senha];
+  if (!validarCampos(campos)) return;
+
+  // valida e-mail
+  if (!emailValido(email.value.trim())) {
+    email.classList.remove("input-ok");
+    email.classList.add("input-error");
+    email.focus();
+    erro.textContent = "Digite um e-mail válido";
+    return;
+  }
+
+  // 🔐 valida senha (ALINHADA COM BACKEND)
+  if (!senhaValida(senha.value)) {
+    senha.classList.remove("input-ok");
+    senha.classList.add("input-error");
+    senha.focus();
+    erro.textContent = "A senha não atende aos requisitos mínimos";
+    return;
+  }
+}
+
+
+  if (step === 2) {
+    const campos = [cpf, dataNascimento, genero];
+    if (!validarCampos(campos)) return;
+  }
+
+  if (step < 3) {
+    step++;
+    updateSteps();
+  } else {
+    cadastrar();
+  }
+}
+
+function prevStep() {
+  if (step === 1) {
+    window.location.href = "/login.html";
+    return;
+  }
+
+  step--;
+  updateSteps();
+}
+
+async function cadastrar() {
+  erro.textContent = "";
+  sucesso.textContent = "";
+
+  btnNext.classList.add("btn-loading");
+  btnNext.textContent = "";
+
+  const payload = {
+    nome: nome.value.trim(),
+    sobrenome: sobrenome.value.trim(),
+    username: username.value.trim(),
+    email: email.value.trim(),
+    senha: senha.value.trim(),
+    cpf: cpf.value.replace(/\D/g, ""),
+    dataNascimento: dataNascimento.value,
+    genero: genero.value,
+    timeCoracao: timeCoracao.value
+  };
+
+  try {
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    btnNext.classList.remove("btn-loading");
+
+    if (!res.ok) {
+      btnNext.textContent = "Criar conta";
+      erro.textContent = data.error || "Erro ao cadastrar";
+      return;
+    }
+
+    // sucesso visual
+    sucesso.innerHTML = `
+      <strong>Conta criada com sucesso! 🎉</strong><br>
+      Verifique seu e-mail para ativar a conta.<br><br>
+      <a href="/login.html" style="
+        display:inline-block;
+        margin-top:10px;
+        padding:10px 20px;
+        background:#22C55E;
+        color:#fff;
+        border-radius:999px;
+        font-weight:800;
+        text-decoration:none;
+      ">Ir para o login</a>
+    `;
+
+    btnNext.style.display = "none";
+    btnPrev.style.display = "none";
+
+  } catch (e) {
+    btnNext.classList.remove("btn-loading");
+    btnNext.textContent = "Criar conta";
+    erro.textContent = "Erro de conexão com o servidor";
+  }
+}
+
+
+
+function validarCampos(campos) {
+  let ok = true;
+
+  campos.forEach(campo => {
+    campo.classList.remove("input-error", "input-ok");
+
+    if (!campo.value.trim()) {
+      campo.classList.add("input-error");
+      ok = false;
+    } else {
+      campo.classList.add("input-ok");
+    }
+  });
+
+  if (!ok) {
+    erro.textContent = "Preencha todos os campos para continuar";
+  }
+
+  return ok;
+}
+
+function emailValido(email) {
+  if (!email.includes("@")) return false;
+
+  const partes = email.split("@");
+  if (partes.length !== 2) return false;
+
+  if (partes[0].length < 1) return false;
+  if (!partes[1].includes(".")) return false;
+
+  const dominio = partes[1].split(".");
+  if (dominio[0].length < 1) return false;
+  if (dominio[1].length < 2) return false;
+
+  return true;
+}
+
+function senhaValida(senha) {
+  return (
+    senha.length >= 6 &&
+    /[a-z]/.test(senha) &&
+    /[A-Z]/.test(senha) &&
+    /\d/.test(senha) &&
+    /[@$!%*?&]/.test(senha)
+  );
+}
+
+updateSteps();
+
+const senhaRegra = document.getElementById("senhaRegra");
+
+senha.addEventListener("input", () => {
+  if (senhaValida(senha.value)) {
+    senhaRegra.classList.add("ok");
+    senhaRegra.classList.remove("erro");
+  } else {
+    senhaRegra.classList.add("erro");
+    senhaRegra.classList.remove("ok");
+  }
+});
+
+const cpfInput = document.getElementById("cpf");
+
+cpfInput.addEventListener("input", () => {
+  let v = cpfInput.value.replace(/\D/g, "");
+
+  if (v.length > 11) v = v.slice(0, 11);
+
+  v = v.replace(/(\d{3})(\d)/, "$1.$2");
+  v = v.replace(/(\d{3})(\d)/, "$1.$2");
+  v = v.replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+
+  cpfInput.value = v;
+});
+
+const toggleSenha = document.getElementById("toggleSenha");
+
+toggleSenha.addEventListener("click", () => {
+  if (senha.type === "password") {
+    senha.type = "text";
+    toggleSenha.textContent = "🙈";
+  } else {
+    senha.type = "password";
+    toggleSenha.textContent = "👁️";
+  }
+});
+
+
+
+</script>
+
+
+
+</body>
+</html>

@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+ 
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Palpitar</title>
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  
+</head>
+
+
+<body class="page-palpitar">
+<script src="authGuard.js"></script>
+
+
+<div class="topo-palpitar">
+<header>
+  <div class="nav-bar">
+
+    <div class="nav-left"></div>
+
+    <ul class="nav-center">
+      <li><a href="index.html" id="linkInicio">Início</a></li>
+      <li><a href="palpitar.html" id="linkPalpitar">Palpitar!</a></li>
+      <li><a href="simulador.html" id="linkSimulador">Simulador</a></li>
+    </ul>
+
+    <div class="user-menu">
+      <button class="menu-btn" id="btnMenu">☰</button>
+
+      <div class="menu-dropdown hidden" id="menuDropdown">
+        <button id="btnLogout">🚪 Sair</button>
+      </div>
+    </div>
+
+  </div>
+</header>
+
+
+<!-- ✅ SELETOR DE DESAFIO (ESTAVA FALTANDO) -->
+  <div id="seletorDesafioContainer" style="display:none;">
+    <div>
+      <strong>🎯 Desafio:</strong>
+      <select id="selectDesafioGlobal"></select>
+    </div>
+  </div>
+<script src="/js/seletorDesafio.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", initSeletorDesafio);
+</script>
+</div>
+<script src="/js/alertaVerificacao.js"></script>
+
+
+<div id="videoModal" class="modal">
+  <div class="modal-content">
+    <p id="avisoVideo" style="color: white; font-size: 18px; margin-bottom: 10px;">
+      ⏳ Aguarde até o final do vídeo para que seu palpite seja registrado
+    </p>
+    <video
+  id="videoPalpite"
+  playsinline
+  disablepictureinpicture
+  controlslist="nodownload noplaybackrate nofullscreen noremoteplayback"
+>
+      <source src="palpite.mp4" type="video/mp4">
+      Seu navegador não suporta vídeos HTML5.
+    </video>
+  </div>
+</div>
+
+<script>
+  const video = document.getElementById("videoPalpite");
+
+  // 🔒 Bloqueia pause
+  video.addEventListener("pause", () => {
+    if (!video.ended) {
+      video.play();
+    }
+  });
+
+  // 🔒 Bloqueia clique no vídeo
+  video.addEventListener("click", e => e.preventDefault());
+
+  // 🔒 Bloqueia teclado enquanto modal está aberto
+  document.addEventListener("keydown", e => {
+    const modal = document.getElementById("videoModal");
+    if (modal.classList.contains("ativo")) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  });
+
+  // 🔒 Bloqueia volume
+  video.volume = 1;
+  video.muted = false;
+  video.addEventListener("volumechange", () => {
+    video.volume = 1;
+    video.muted = false;
+  });
+
+  // 🔒 Bloqueia fullscreen
+  video.addEventListener("fullscreenchange", e => e.preventDefault());
+</script>
+
+
+<div class="container" style="position: relative;">
+
+    <div id="bloqueioEliminado">
+    <div class="overlay-box">
+      <h2>❌ Você foi eliminado</h2>
+      <p id="mensagemEliminacao"></p>
+    </div>
+  </div>
+
+  <p class="mensagem-intro">Hora de palpitar. Qual time <strong>não vai perder</strong> nessa rodada?</p>
+  <h2 class="titulo-rodada">Rodada 35</h2>
+  <p id="contador" style="font-size:18px; color:red; margin-bottom:15px;"></p>
+  <div id="jogosContainer"></div>
+  <button id="btnConfirmar" disabled>Confirmar Palpite</button>
+</div>
+
+<script>
+  const paginaAtual = window.location.pathname.split("/").pop();
+  if (paginaAtual.includes("index")) document.getElementById("linkInicio").classList.add("ativo");
+  else if (paginaAtual.includes("palpitar")) document.getElementById("linkPalpitar").classList.add("ativo");
+  else if (paginaAtual.includes("simulador")) document.getElementById("linkSimulador").classList.add("ativo");
+  
+  async function carregarContextoDoJogo() {
+  const token = localStorage.getItem("authToken");
+
+  if (!token) {
+    return null;
+  }
+
+  const res = await fetch("/api/jogo/contexto", {
+  headers: getAuthHeaders()
+  });
+
+  if (!res.ok) {
+    throw new Error("Erro ao carregar contexto do jogo");
+  }
+
+  const data = await res.json();
+  return data.desafio;
+}
+
+  let desafioAtual = null;
+
+  
+  let rodadaFixa = null; // vai vir do backend
+  let jogosRodada = [];
+  let jogosTodos = []; // <<< novo: guarda todos os jogos retornados por /api/jogos
+  let timeSelecionado = null;
+  let palpiteOriginal = null;
+
+  const timesSelecionadosPorRodada = {};
+  const contadorAdversarios = {};
+
+   let deadline = null;
+  let intervaloContagem = null;
+
+
+  async function buscarJogos() {
+  const resp = await fetch("/api/jogos");
+  const data = await resp.json();
+
+  // salvar todos os jogos para consultas posteriores (importante)
+  jogosTodos = data.response || [];
+
+  // filtrar apenas os jogos da rodada atual (rodadaFixa já deveria estar setada)
+  jogosRodada = jogosTodos.filter(j => {
+    const roundPart = (j.league && j.league.round) ? j.league.round.split(" - ")[1] : null;
+    return parseInt(roundPart, 10) === rodadaFixa;
+  });
+
+  if (jogosRodada.length) {
+    jogosRodada.sort((a,b)=> new Date(a.fixture.date)-new Date(b.fixture.date));
+    deadline = new Date(jogosRodada[0].fixture.date);
+    iniciarContagemRegressiva();
+  } else {
+    deadline = null;
+    clearInterval(intervaloContagem);
+    document.getElementById("contador").textContent = "";
+  }
+
+  await carregarPalpitesAnteriores();
+  exibirRodada();
+}
+
+
+ async function carregarPalpitesAnteriores() {
+  try {
+    const token = localStorage.getItem("authToken");
+
+const resp = await fetch("/api/palpites", {
+headers: getAuthHeaders()
+});
+    if (!resp.ok) throw new Error("Erro ao buscar palpites");
+    const palpites = await resp.json();
+
+    // popula o mapa de palpites por rodada
+    Object.keys(timesSelecionadosPorRodada).forEach(k => delete timesSelecionadosPorRodada[k]);
+    palpites.forEach(p => timesSelecionadosPorRodada[p.rodada] = p.time);
+
+    // Recalcular adversários olhando todos os jogos (jogosTodos)
+    Object.keys(contadorAdversarios).forEach(k => delete contadorAdversarios[k]);
+
+    for (const rodadaStr in timesSelecionadosPorRodada) {
+      const rodadaNum = Number(rodadaStr);
+      const timeEscolhido = timesSelecionadosPorRodada[rodadaStr];
+
+      // procurar o jogo dessa rodada onde esse time participou, dentro de todos os jogos
+      const jogoEncontrado = jogosTodos.find(j => {
+        if (!j.league || !j.league.round) return false;
+        const part = j.league.round.split(" - ")[1];
+        return Number(part) === rodadaNum && (j.teams.home.name === timeEscolhido || j.teams.away.name === timeEscolhido);
+      });
+
+      if (!jogoEncontrado) continue;
+
+      const adversario = jogoEncontrado.teams.home.name === timeEscolhido
+        ? jogoEncontrado.teams.away.name
+        : jogoEncontrado.teams.home.name;
+
+      contadorAdversarios[adversario] = (contadorAdversarios[adversario] || 0) + 1;
+    }
+
+    // Se já houver um palpite salvo para a rodada atual, marque-o como timeSelecionado
+    timeSelecionado = timesSelecionadosPorRodada[rodadaFixa] || null;
+ // palpite salvo na rodada atual
+palpiteOriginal = timesSelecionadosPorRodada[rodadaFixa] || null;
+
+// seleção atual começa igual ao original
+timeSelecionado = palpiteOriginal;
+
+atualizarEstadoBotao();
+
+  } catch(e){
+    console.error(e);
+  }
+}
+
+async function verificarStatusJogador() {
+  try {
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
+
+    const res = await fetch("/api/status-jogador", {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    const data = await res.json();
+
+if (data.status === "eliminado" && data.rodadaEliminacao !== null) {
+  const overlay = document.getElementById("bloqueioEliminado");
+  overlay.style.display = "flex";
+
+  document.getElementById("mensagemEliminacao").textContent =
+    `Você foi eliminado na rodada ${data.rodadaEliminacao}.`;
+
+  document.getElementById("btnConfirmar").disabled = true;
+    }
+
+  } catch (err) {
+    console.error("Erro ao verificar status do jogador", err);
+  }
+}
+
+  function iniciarContagemRegressiva() {
+    const c = document.getElementById("contador");
+    intervaloContagem = setInterval(()=>{
+      const diff = deadline - new Date();
+     const h=Math.floor(diff/(1000*60*60)), m=Math.floor((diff%(1000*60*60))/(1000*60)), s=Math.floor((diff%(1000*60))/1000);
+      c.textContent=`⏳ Tempo restante: ${h}h ${m}m ${s}s`;
+    },1000);
+  }
+
+ function exibirRodada(){
+  const container = document.getElementById("jogosContainer");
+  container.innerHTML="";
+  if(!jogosRodada.length){ container.innerHTML="<p>Sem jogos nesta rodada.</p>"; return; }
+
+  // times já usados em outras rodadas (não contar a rodada atual)
+  const timesJaUsados = Object.entries(timesSelecionadosPorRodada)
+    .filter(([r])=>parseInt(r)!==rodadaFixa).map(([,t])=>t);
+
+  // adversários bloqueados em função do contador global
+  const advBloqueados = Object.keys(contadorAdversarios).filter(t=>contadorAdversarios[t]>=3);
+
+  jogosRodada.forEach(j=>{
+    const div=document.createElement("div"); div.className="jogo";
+    const dh = new Date(j.fixture.date);
+    const data = dh.toLocaleDateString('pt-BR'), hora=dh.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    const h=j.teams.home.name, a=j.teams.away.name;
+
+    // agora avaliamos desativação consultando timesJaUsados E advBloqueados
+    const isHomeDesativ = timesJaUsados.includes(h) || advBloqueados.includes(a);
+    const isAwayDesativ = timesJaUsados.includes(a) || advBloqueados.includes(h);
+
+    // construir classes incluindo "selecionado" se for o timeSelecionado
+    const homeClasses = ["time"];
+    if (timeSelecionado===h) homeClasses.push("selecionado");
+    if (isHomeDesativ) homeClasses.push("desativado");
+
+    const awayClasses = ["time"];
+    if (timeSelecionado===a) awayClasses.push("selecionado");
+    if (isAwayDesativ) awayClasses.push("desativado");
+
+div.innerHTML = `
+  <div class="data-hora">${data} - ${hora}</div>
+
+  <div class="linha-confronto">
+
+    <div class="time-wrapper">
+      <div
+        class="${homeClasses.join(" ")}"
+        ${isHomeDesativ ? "" : `onclick="selecionarTime('${h}')"`}>
+        ${h}
+      </div>
+      <a href="#" class="odd" target="_blank" onclick="event.stopPropagation()">1.85</a>
+    </div>
+
+    <div class="vs">VS</div>
+
+    <div class="time-wrapper">
+      <div
+        class="${awayClasses.join(" ")}"
+        ${isAwayDesativ ? "" : `onclick="selecionarTime('${a}')"`}>
+        ${a}
+      </div>
+      <a href="#" class="odd" target="_blank" onclick="event.stopPropagation()">1.85</a>
+    </div>
+
+  </div>
+
+  <div class="local">${j.fixture.venue.name}</div>
+`;
+
+    container.appendChild(div);
+  });
+  }
+
+
+function selecionarTime(time){
+  timeSelecionado = (timeSelecionado===time)? null: time;
+
+  if (timeSelecionado) {
+    timesSelecionadosPorRodada[rodadaFixa] = timeSelecionado;
+  } else {
+    delete timesSelecionadosPorRodada[rodadaFixa];
+  }
+
+  // Opcional: recalcular contadorAdversarios localmente para refletir seleção imediata
+  // (poderia chamar uma função que reexecuta o loop de contador com jogosTodos)
+  // Para simplicidade, vamos simplesmente recarregar a exibição:
+  exibirRodada();
+atualizarEstadoBotao();
+}
+
+function fecharModalVideo() {
+  const modal = document.getElementById("videoModal");
+  const video = document.getElementById("videoPalpite");
+
+  video.pause();
+  video.currentTime = 0;
+  modal.classList.remove("ativo");
+}
+
+function atualizarEstadoBotao() {
+  const btn = document.getElementById("btnConfirmar");
+
+  if (!timeSelecionado) {
+    btn.disabled = true;
+    return;
+  }
+
+  btn.disabled = timeSelecionado === palpiteOriginal;
+}
+
+
+function esperarFimDoVideo(video) {
+  return new Promise(resolve => {
+    video.onended = () => {
+      resolve();
+    };
+  });
+}
+
+  document.getElementById("btnConfirmar").addEventListener("click", async () => {
+  if (!timeSelecionado) return;
+
+  const modal = document.getElementById("videoModal");
+  const video = document.getElementById("videoPalpite");
+  const aviso = document.getElementById("avisoVideo");
+
+  // 1️⃣ Abre modal e toca vídeo
+  modal.classList.add("ativo");
+  aviso.style.display = "block";
+  video.currentTime = 0;
+  video.play();
+
+  // 2️⃣ ESPERA o vídeo terminar
+  await esperarFimDoVideo(video);
+
+  // 3️⃣ Agora sim: envia o palpite
+  try {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      alert("Você precisa estar logado para palpitar.");
+      fecharModalVideo();
+      window.location.href = "/login.html";
+      return;
+    }
+
+const res = await fetch("/api/palpite", {
+  method: "POST",
+  headers: {
+    ...getAuthHeaders(),
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    rodada: rodadaFixa,
+    time: timeSelecionado
+  })
+});
+
+
+    const data = await res.json();
+
+ if (!res.ok && data.codigo === "EMAIL_NAO_VERIFICADO") {
+
+  mostrarToast(
+    "⚠️ Verifique seu e-mail para conseguir palpitar.",
+    "erro",
+    `
+      <button class="toast-btn" id="btnReenviarToast">📩 Reenviar link</button>
+      <button class="toast-btn fechar" id="btnFecharToast">Fechar</button>
+    `
+  );
+
+  // ⚠️ esperar DOM do toast existir
+  setTimeout(() => {
+    const btnReenviar = document.getElementById("btnReenviarToast");
+    const btnFechar = document.getElementById("btnFecharToast");
+
+    if (btnReenviar) {
+  btnReenviar.onclick = async () => {
+  btnReenviar.disabled = true;
+  btnReenviar.textContent = "Enviando...";
+
+  await fetch("/api/reenviar-verificacao", {
+    method: "POST",
+    headers: getAuthHeaders()
+  });
+
+        mostrarToast("✅ Link reenviado! Verifique seu e-mail.", "sucesso");
+      };
+    }
+
+    if (btnFechar) {
+      btnFechar.onclick = () => {
+        document.getElementById("toast").classList.remove("ativo");
+      };
+    }
+  }, 50);
+
+  fecharModalVideo();
+  return;
+}
+
+
+if (res.ok) {
+  mostrarToast(`✅ ${data.message}`, "sucesso");
+
+  // 🔒 AJUSTE 4 — trava novamente após salvar
+  palpiteOriginal = timeSelecionado;
+  atualizarEstadoBotao();
+
+  fecharModalVideo();
+} else {
+  mostrarToast(`❌ ${data.message || "Erro ao salvar palpite"}`, "erro");
+  fecharModalVideo();
+}
+
+  } catch (e) {
+    mostrarToast("❌ Erro de conexão com o servidor", "erro");
+    fecharModalVideo();
+  }
+});
+;
+
+function getAuthHeaders() {
+  const token = localStorage.getItem("authToken");
+  const challengeId = localStorage.getItem("challengeIdSelecionado");
+
+  const headers = {
+    "Authorization": `Bearer ${token}`
+  };
+
+  if (challengeId) {
+    headers["X-CHALLENGE-ID"] = challengeId;
+  }
+
+  return headers;
+}
+
+function aplicarEstadoDoDesafio(desafio) {
+  const contador = document.getElementById("contador");
+  const container = document.getElementById("jogosContainer");
+  const btn = document.getElementById("btnConfirmar");
+
+  // reset visual
+  container.innerHTML = "";
+  btn.disabled = true;
+  contador.textContent = "";
+
+  // ❌ RODADA EM ANDAMENTO
+  if (desafio.status === "aguardando") {
+    contador.textContent =
+      "⏳ Agora já foi. Acompanhe a rodada e aproveite para fazer simulações.";
+    return false;
+  }
+
+  // ❌ DESAFIO ACABOU
+  if (desafio.status === "finalizado") {
+    contador.textContent =
+      "🏁 Desafio finalizado. Obrigado por participar!";
+    return false;
+  }
+
+  // ✅ iniciando OU ativo → segue o fluxo normal
+  return true;
+}
+
+function mostrarToast(mensagem, tipo = "sucesso", actionsHTML = "") {
+  const toast = document.getElementById("toast");
+  const msg = document.getElementById("toastMsg");
+  const actions = document.getElementById("toastActions");
+  const overlay = document.getElementById("toastOverlay"); // 👈 ADICIONADO
+
+  msg.textContent = mensagem;
+  actions.innerHTML = actionsHTML;
+
+  toast.className = `toast ativo ${tipo}`;
+
+  overlay?.classList.add("ativo"); // 👈 ADICIONADO
+
+  if (tipo === "sucesso") {
+    actions.innerHTML += `
+      <button class="toast-btn fechar" id="toastFecharAuto">Fechar</button>
+    `;
+  }
+
+  setTimeout(() => {
+    const btn = document.getElementById("toastFecharAuto");
+    if (btn) btn.onclick = () => {
+      toast.classList.remove("ativo");
+      overlay?.classList.remove("ativo"); // 👈 ADICIONADO
+    };
+  }, 10);
+
+  requestAnimationFrame(() => {});
+}
+
+
+async function initPalpitar() {
+  desafioAtual = await carregarContextoDoJogo();
+
+  if (!desafioAtual) {
+    alert("Nenhum desafio ativo no momento.");
+    return;
+  }
+
+  // 🔑 SEMPRE define a rodada visual
+rodadaFixa = desafioAtual.rodadaAtual;
+
+const titulo = document.querySelector(".titulo-rodada");
+if (titulo) {
+  titulo.textContent = `Rodada ${rodadaFixa}`;
+}
+
+// 🔒 AGORA sim aplica o bloqueio
+const podeContinuar = aplicarEstadoDoDesafio(desafioAtual);
+if (!podeContinuar) return;
+
+  await verificarStatusJogador();
+  await buscarJogos();
+}
+
+initPalpitar();
+
+document.addEventListener("desafioAlterado", async () => {
+  console.log("🔄 Desafio alterado — reiniciando Palpitar");
+
+  // 🔥 LIMPA ESTADO ANTIGO
+  rodadaFixa = null;
+  jogosRodada = [];
+  jogosTodos = [];
+  timeSelecionado = null;
+
+  Object.keys(timesSelecionadosPorRodada).forEach(k => delete timesSelecionadosPorRodada[k]);
+  Object.keys(contadorAdversarios).forEach(k => delete contadorAdversarios[k]);
+
+  clearInterval(intervaloContagem);
+  document.getElementById("contador").textContent = "";
+  document.getElementById("jogosContainer").innerHTML = "";
+
+  // 🔑 RECARREGA CONTEXTO DO NOVO DESAFIO
+  await initPalpitar();
+});
+
+
+const btnMenuUser = document.getElementById("btnMenu");
+const menuDropdown = document.getElementById("menuDropdown");
+const btnLogout = document.getElementById("btnLogout");
+
+if (btnMenuUser && menuDropdown) {
+  btnMenuUser.addEventListener("click", (e) => {
+    e.stopPropagation();
+    menuDropdown.classList.toggle("hidden");
+  });
+
+  document.addEventListener("click", () => {
+    menuDropdown.classList.add("hidden");
+  });
+
+  menuDropdown.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+}
+
+if (btnLogout) {
+  btnLogout.addEventListener("click", () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("challengeIdSelecionado");
+    window.location.href = "/login.html";
+  });
+}
+</script>
+
+<div id="toast" class="toast">
+  <span id="toastMsg"></span>
+  <div id="toastActions"></div>
+</div>
+<div id="toastOverlay"></div>
+</body>
+</html>

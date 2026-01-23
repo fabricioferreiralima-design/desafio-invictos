@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
+
+  <!-- fonte -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- css -->
+  <link rel="stylesheet" href="auth.css">
+</head>
+
+<body class="auth-page">
+
+  <div class="auth-wrapper">
+
+    <div class="auth-hero">
+<h1>🏆 Desafio Invictos</h1>
+<p>⚽ Sobreviva ao Campeonato</p>
+    </div>
+
+    <div class="auth-card">
+      <h2>Login</h2>
+
+      <input type="text" id="login" placeholder="Email ou usuário">
+      <input type="password" id="senha" placeholder="Senha">
+
+      <button class="auth-btn" onclick="fazerLogin()">Entrar</button>
+
+      <div class="auth-link">
+        Ainda não tem conta?
+        <a href="/register.html">Criar agora</a>
+      </div>
+
+      <div class="auth-error" id="erro"></div>
+    </div>
+
+  </div>
+
+<script>
+async function fazerLogin() {
+  const login = document.getElementById("login").value.trim();
+  const senha = document.getElementById("senha").value.trim();
+  const erroEl = document.getElementById("erro");
+
+  erroEl.textContent = "";
+
+  try {
+    const res = await fetch("/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ login, senha })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      erroEl.textContent = data.error || "Erro ao fazer login";
+      return;
+    }
+
+    localStorage.setItem("authToken", data.token);
+    localStorage.setItem("userEmail", data.email);
+
+    const redirect = localStorage.getItem("redirectAfterLogin");
+    if (redirect) {
+      localStorage.removeItem("redirectAfterLogin");
+      window.location.href = redirect;
+    } else {
+      window.location.href = "/index.html";
+    }
+
+  } catch (e) {
+    erroEl.textContent = "Erro de conexão com o servidor";
+  }
+}
+</script>
+
+</body>
+</html>

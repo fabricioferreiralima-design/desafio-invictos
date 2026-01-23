@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+ 
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Simulador de Palpites</title>
+
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  
+  
+</head>
+
+
+<body class="page-simulador">
+  <script src="authGuard.js"></script>
+   <div class="topo-palpitar">
+<header>
+  <div class="nav-bar">
+
+    <div class="nav-left"></div>
+
+    <ul class="nav-center">
+      <li><a href="index.html" id="linkInicio">Início</a></li>
+      <li><a href="palpitar.html" id="linkPalpitar">Palpitar!</a></li>
+      <li><a href="simulador.html" id="linkSimulador">Simulador</a></li>
+    </ul>
+
+    <div class="user-menu">
+      <button class="menu-btn" id="btnMenu">☰</button>
+
+      <div class="menu-dropdown hidden" id="menuDropdown">
+        <button id="btnLogout">🚪 Sair</button>
+      </div>
+    </div>
+
+  </div>
+</header>
+<!-- ✅ SELETOR DE DESAFIO (ESTAVA FALTANDO) -->
+  <div id="seletorDesafioContainer" style="display:none;">
+    <div>
+      <strong>🎯 Desafio:</strong>
+      <select id="selectDesafioGlobal"></select>
+    </div>
+  </div>
+
+  <script src="/js/seletorDesafio.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", initSeletorDesafio);
+
+const btnMenuUser = document.getElementById("btnMenu");
+const menuDropdown = document.getElementById("menuDropdown");
+const btnLogout = document.getElementById("btnLogout");
+
+if (btnMenuUser && menuDropdown) {
+  btnMenuUser.addEventListener("click", (e) => {
+    e.stopPropagation();
+    menuDropdown.classList.toggle("hidden");
+  });
+
+  document.addEventListener("click", () => {
+    menuDropdown.classList.add("hidden");
+  });
+
+  menuDropdown.addEventListener("click", (e) => {
+    e.stopPropagation();
+  });
+}
+
+if (btnLogout) {
+  btnLogout.addEventListener("click", () => {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("challengeIdSelecionado");
+    window.location.href = "/login.html";
+  });
+}
+</script>
+
+</div>
+
+<script src="/js/alertaVerificacao.js"></script>
+
+  <div class="container">
+
+<div class="hero-rodada-simulador">
+  <button
+    class="nav-rodada"
+    id="btnAnterior"
+    onclick="mudarRodada(-1)"
+    aria-label="Rodada anterior"
+  >
+    ←
+  </button>
+
+  <h2 class="titulo-rodada" id="tituloRodada">
+    Rodada
+  </h2>
+
+  <button
+    class="nav-rodada"
+    id="btnProximo"
+    onclick="mudarRodada(1)"
+    aria-label="Próxima rodada"
+  >
+    →
+  </button>
+</div>
+
+<div id="areaJogos" style="position: relative;">
+
+  <!-- OVERLAY ÚNICO -->
+  <div id="bloqueioEliminado">
+    <div class="overlay-box">
+      <h2>❌ Você foi eliminado</h2>
+      <p id="mensagemEliminacao"></p>
+    </div>
+  </div>
+
+  <div id="jogosContainer"></div>
+</div>
+
+  <div id="selecionadosContainer">
+    <h3>Times Selecionados</h3>
+    <ul id="listaSelecionados"></ul>
+    <h4>Adversários enfrentados:</h4>
+    <ul id="listaAdversarios"></ul>
+    <button id="btnResetSimulacao" style="
+  width: 100%;
+  margin-top: 10px;
+  padding: 8px;
+  background: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+">
+  🔄 Resetar simulação
+</button>
+
+  </div>
+
+ <div id="confirmacaoReset" class="modal-confirmacao">
+  <div class="modal-box">
+    <h3>🔄 Resetar simulação?</h3>
+    <p>Isso apagará todas as seleções feitas no simulador.</p>
+
+    <div class="acoes">
+      <button id="btnConfirmarReset">Resetar</button>
+      <button id="btnCancelarReset">Cancelar</button>
+          </div>
+  </div>
+</div>
+
+  <script>
+    // Detecta qual página está aberta e aplica o destaque
+    const paginaAtual = window.location.pathname.split("/").pop();
+    if (paginaAtual.includes("index")) {
+      document.getElementById("linkInicio").classList.add("ativo");
+    } else if (paginaAtual.includes("palpitar")) {
+      document.getElementById("linkPalpitar").classList.add("ativo");
+    } else if (paginaAtual.includes("simulador")) {
+      document.getElementById("linkSimulador").classList.add("ativo");
+    }
+
+    let statusDesafio = null;
+    let rodadaInicialDesafio = null;
+let rodadaFinalDesafio = null;
+
+
+async function carregarContextoDoJogo() {
+  const token = localStorage.getItem("authToken");
+
+  if (!token) {
+    return null;
+  }
+
+  const res = await fetch("/api/jogo/contexto", {
+  headers: getAuthHeaders()
+  });
+
+  if (!res.ok) {
+    throw new Error("Erro ao carregar contexto do jogo");
+  }
+
+  const data = await res.json();
+  return data.desafio;
+}
+
+
+  let rodadaAtual = null;        // fallback
+  let rodadaEmAndamento = null;  // fallback
+  let rodadas = {};
+    const timesSelecionadosPorRodada = {};
+    const contadorAdversarios = {};
+
+        // ==== BUSCAR JOGOS ====
+async function buscarJogos() {
+  const response = await fetch("/api/jogos");
+  const data = await response.json();
+  const jogos = data.response;
+
+  rodadas = {};
+
+  jogos.forEach(jogo => {
+    const rodadaStr = jogo.league.round;
+    const rodadaNum = parseInt(rodadaStr.split(" - ")[1]);
+
+    // ✅ AGORA respeita o desafio selecionado
+    if (
+      rodadaNum >= rodadaInicialDesafio &&
+      rodadaNum <= rodadaFinalDesafio
+    ) {
+      if (!rodadas[rodadaNum]) {
+        rodadas[rodadaNum] = [];
+      }
+      rodadas[rodadaNum].push(jogo);
+    }
+  });
+
+  exibirRodada();
+  await verificarStatusJogadorSimulador();
+}
+
+
+    // ==== CARREGAR PALPITES SALVOS ====
+    async function carregarPalpitesSalvos() {
+      try {
+        const token = localStorage.getItem("authToken");
+
+const resp = await fetch("/api/palpites", {
+headers: getAuthHeaders()
+});
+
+        if (!resp.ok) throw new Error("Erro ao buscar palpites");
+        const palpites = await resp.json();
+        palpites.forEach(p => {
+          timesSelecionadosPorRodada[p.rodada] = p.time;
+        });
+        recalcularAdversarios();
+        atualizarListaLateral();
+        exibirRodada();
+      } catch (err) {
+        console.error("Erro ao carregar palpites:", err);
+      }
+    }
+
+    let jogadorEliminado = false;
+
+    async function verificarStatusJogadorSimulador() {
+  const overlay = document.getElementById("bloqueioEliminado");
+  const msg = document.getElementById("mensagemEliminacao");
+
+  // estado seguro por padrão
+  jogadorEliminado = false;
+  overlay.style.display = "none";
+  msg.textContent = "";
+
+  try {
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
+
+    const res = await fetch("/api/status-jogador", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const data = await res.json();
+
+    // ✅ REGRA CORRETA
+    if (
+      data.status === "eliminado" &&
+      typeof data.rodadaEliminacao === "number" &&
+      data.rodadaEliminacao <= rodadaEmAndamento
+    ) {
+      jogadorEliminado = true;
+      overlay.style.display = "flex";
+      msg.textContent = `Você foi eliminado na rodada ${data.rodadaEliminacao}.`;
+
+      const btnReset = document.getElementById("btnResetSimulacao");
+      if (btnReset) btnReset.disabled = true;
+    }
+
+  } catch (err) {
+    console.error("Erro ao verificar status do jogador:", err);
+  }
+}
+
+
+
+    // ==== FUNÇÃO UNIFICADA DE SELEÇÃO ====
+function selecionarTime(rodada, timeEscolhido) {
+
+  
+  // 🔒 bloqueio por status do desafio
+  if (statusDesafio === "finalizado") {
+    return;
+  }
+
+  // 🔒 BLOQUEIO POR STATUS + RODADA
+if (statusDesafio === "aguardando") {
+  // rodada passada OU rodada atual → bloqueado
+  if (rodada <= rodadaEmAndamento) {
+    return;
+  }
+}
+
+
+    // 🔒 regra definitiva
+  if (rodada < rodadaEmAndamento) {
+    console.warn("Tentativa de alterar rodada passada bloqueada");
+    return;
+  }
+  if (jogadorEliminado) return; // 🔒 trava tudo
+
+  const jogosRodada = rodadas[rodada];
+  if (!jogosRodada) return;
+
+  const jogo = jogosRodada.find(j =>
+    j.teams.home.name === timeEscolhido ||
+    j.teams.away.name === timeEscolhido
+  );
+  if (!jogo) return;
+
+  const adversario =
+    jogo.teams.home.name === timeEscolhido
+      ? jogo.teams.away.name
+      : jogo.teams.home.name;
+
+  if (timesSelecionadosPorRodada[rodada] === timeEscolhido) {
+    delete timesSelecionadosPorRodada[rodada];
+  } else {
+    if ((contadorAdversarios[adversario] ?? 0) >= 3) return;
+
+    const jaUsado = Object.entries(timesSelecionadosPorRodada)
+      .some(([r, t]) => parseInt(r) !== rodada && t === timeEscolhido);
+    if (jaUsado) return;
+
+    timesSelecionadosPorRodada[rodada] = timeEscolhido;
+  }
+
+  recalcularAdversarios();
+  atualizarListaLateral();
+  exibirRodada();
+}
+
+
+    // ==== RECALCULA ADVERSÁRIOS ====
+    function recalcularAdversarios() {
+      Object.keys(contadorAdversarios).forEach(k => delete contadorAdversarios[k]);
+      for (const rodada in timesSelecionadosPorRodada) {
+        const rodadaNum = parseInt(rodada);
+        const jogosRodada = rodadas[rodadaNum];
+        const timeEscolhido = timesSelecionadosPorRodada[rodadaNum];
+        if (!jogosRodada || !timeEscolhido) continue;
+        const jogo = jogosRodada.find(j => j.teams.home.name === timeEscolhido || j.teams.away.name === timeEscolhido);
+        if (jogo) {
+          const adversario = jogo.teams.home.name === timeEscolhido ? jogo.teams.away.name : jogo.teams.home.name;
+          contadorAdversarios[adversario] = (contadorAdversarios[adversario] || 0) + 1;
+        }
+      }
+    }
+
+    // ==== EXIBIR RODADA ====
+    function exibirRodada() {
+      document.getElementById("tituloRodada").textContent = `Rodada ${rodadaAtual}`;
+      const container = document.getElementById("jogosContainer");
+      container.innerHTML = "";
+      const jogosRodada = rodadas[rodadaAtual];
+      if (!jogosRodada || jogosRodada.length === 0) {
+        container.innerHTML = "<p>Sem jogos nesta rodada.</p>";
+        return;
+      }
+
+      const palpiteAtual = timesSelecionadosPorRodada[rodadaAtual];
+      const timesJaUsados = Object.entries(timesSelecionadosPorRodada)
+        .filter(([r]) => parseInt(r) !== rodadaAtual)
+        .map(([, t]) => t);
+      const limiteAdversario = 3;
+      const adversariosBloqueados = Object.keys(contadorAdversarios)
+        .filter(t => contadorAdversarios[t] >= limiteAdversario);
+
+let bloquearEdicao = false;
+
+if (statusDesafio === "aguardando") {
+  // rodada atual e passadas bloqueadas
+  bloquearEdicao = rodadaAtual <= rodadaEmAndamento;
+}
+
+if (statusDesafio === "ativo" || statusDesafio === "iniciando") {
+  // apenas rodadas passadas bloqueadas
+  bloquearEdicao = rodadaAtual < rodadaEmAndamento;
+}
+
+if (statusDesafio === "finalizado") {
+  // tudo bloqueado
+  bloquearEdicao = true;
+}
+const rodadaPassada = rodadaAtual < rodadaEmAndamento;
+
+      jogosRodada.forEach(jogo => {
+        const divJogo = document.createElement("div");
+        divJogo.className = "jogo";
+
+         const dataHora = new Date(jogo.fixture.date);
+        const dataTexto = dataHora.toLocaleDateString('pt-BR');
+        const horaTexto = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        const home = jogo.teams.home.name;
+        const away = jogo.teams.away.name;
+
+        let isHomeDisabled = false;
+        let isAwayDisabled = false;
+
+       // 🔹 Simulador: TODAS as rodadas são editáveis
+// 🔒 rodada passada OU desafio aguardando = somente leitura
+if (bloquearEdicao) {
+  // só desativa se NÃO for o time selecionado
+  isHomeDisabled = palpiteAtual !== home;
+  isAwayDisabled = palpiteAtual !== away;
+} else {
+  isHomeDisabled =
+    timesJaUsados.includes(home) ||
+    adversariosBloqueados.includes(away);
+
+  isAwayDisabled =
+    timesJaUsados.includes(away) ||
+    adversariosBloqueados.includes(home);
+}
+
+let motivoHome = "";
+let motivoAway = "";
+
+if (timesJaUsados.includes(home)) {
+  motivoHome = "⚠️ Time já usado em outra rodada";
+}
+if (adversariosBloqueados.includes(away)) {
+  motivoHome = "🚫 Adversário já enfrentado 3 vezes";
+}
+
+if (timesJaUsados.includes(away)) {
+  motivoAway = "⚠️ Time já usado em outra rodada";
+}
+if (adversariosBloqueados.includes(home)) {
+  motivoAway = "🚫 Adversário já enfrentado 3 vezes";
+}
+
+       divJogo.innerHTML = `
+  <div class="data-hora">
+    ${dataTexto} - ${horaTexto}
+  </div>
+
+  <div class="linha-confronto">
+
+  <div class="time-wrapper">
+ <div class="time
+  ${isHomeDisabled ? 'desativado' : ''}
+  ${rodadaPassada ? 'passado' : ''}
+  ${palpiteAtual === home ? 'selecionado' : ''}"
+  data-time="${home}"
+  data-motivo="${rodadaPassada ? '' : motivoHome}">
+  ${home}
+</div>
+  </div>
+
+  <div class="placar">
+    ${jogo.goals.home ?? '-'}
+    <span style="opacity:.4">x</span>
+    ${jogo.goals.away ?? '-'}
+  </div>
+
+  <div class="time-wrapper">
+    <div class="time
+  ${isAwayDisabled ? 'desativado' : ''}
+  ${rodadaPassada ? 'passado' : ''}
+  ${palpiteAtual === away ? 'selecionado' : ''}"
+  data-time="${away}"
+  data-motivo="${rodadaPassada ? '' : motivoAway}">
+  ${away}
+</div>
+  </div>
+
+</div>
+
+  <div class="local">${jogo.fixture.venue.name}</div>
+`;
+
+
+
+divJogo.querySelectorAll(".time").forEach(el => {
+  el.addEventListener("click", () => {
+  if (el.classList.contains("desativado")) {
+
+  // 🔕 sem motivo = sem tooltip (rodada passada)
+  if (!el.dataset.motivo) {
+    return;
+  }
+
+  mostrarAvisoBloqueio(el, el.dataset.motivo);
+  return;
+}
+
+
+  const timeEscolhido = el.dataset.time;
+  selecionarTime(rodadaAtual, timeEscolhido);
+});
+});
+
+        container.appendChild(divJogo);
+      });
+
+  document.getElementById("btnAnterior").disabled =
+  rodadaAtual === rodadaInicialDesafio;
+
+document.getElementById("btnProximo").disabled =
+  rodadaAtual === rodadaFinalDesafio;
+
+ 
+    }
+
+async function carregarDesafioAtivo() {
+  const token = localStorage.getItem("authToken");
+  if (!token) return;
+
+  const res = await fetch("/api/jogo/contexto", {
+  headers: getAuthHeaders()
+});
+
+  if (!res.ok) {
+    throw new Error("Erro ao carregar desafio ativo");
+  }
+
+  const data = await res.json();
+  const desafio = data.desafio;
+
+statusDesafio = desafio.status;
+rodadaEmAndamento = desafio.rodadaAtual;
+
+// 🔑 intervalo do desafio
+rodadaInicialDesafio = desafio.rodadaInicial;
+rodadaFinalDesafio = desafio.rodadaFinal;
+
+// 🔥 SEMPRE ajustar rodadaAtual ao desafio selecionado
+if (
+  rodadaAtual === null ||
+  rodadaAtual < rodadaInicialDesafio ||
+  rodadaAtual > rodadaFinalDesafio
+) {
+  rodadaAtual = rodadaEmAndamento;
+}
+
+  console.log("Status do desafio:", statusDesafio);
+  console.log("Rodada em andamento:", rodadaEmAndamento);
+}
+
+    // ==== LISTA LATERAL ====
+    function atualizarListaLateral() {
+      const lista = document.getElementById("listaSelecionados");
+      const listaAdv = document.getElementById("listaAdversarios");
+      lista.innerHTML = "";
+      listaAdv.innerHTML = "";
+
+      Object.keys(timesSelecionadosPorRodada).sort((a,b) => a-b).forEach(rodada => {
+        const li = document.createElement("li");
+        li.textContent = `Rodada ${rodada}: ${timesSelecionadosPorRodada[rodada]}`;
+        lista.appendChild(li);
+      });
+
+      Object.entries(contadorAdversarios).sort((a,b) => b[1]-a[1]).forEach(([adv,count]) => {
+        const li = document.createElement("li");
+        li.textContent = `${adv}: ${count}x`;
+        if (count >= 3) li.style.color = "red";
+        listaAdv.appendChild(li);
+      });
+    }
+
+    // ==== NAVEGAÇÃO ====
+function mudarRodada(direcao) {
+  const novaRodada = rodadaAtual + direcao;
+
+  if (
+    novaRodada >= rodadaInicialDesafio &&
+    novaRodada <= rodadaFinalDesafio
+  ) {
+    rodadaAtual = novaRodada;
+    exibirRodada();
+  }
+}
+
+
+    function aplicarEstadoDoDesafioNoSimulador() {
+  const container = document.getElementById("jogosContainer");
+
+  // 🔴 DESAFIO FINALIZADO
+  if (statusDesafio === "finalizado") {
+    container.innerHTML =
+      "<p style='text-align:center;font-size:18px;'>🏁 Desafio finalizado. O simulador foi encerrado.</p>";
+    return false;
+  }
+
+  // 🟡 RODADA EM ANDAMENTO → SOMENTE LEITURA
+  if (statusDesafio === "aguardando") {
+    return "somente-leitura";
+  }
+
+  // 🟢 iniciando ou ativo
+  return true;
+}
+
+function getAuthHeaders() {
+  const token = localStorage.getItem("authToken");
+  const challengeId = localStorage.getItem("challengeIdSelecionado");
+
+  const headers = {
+    "Authorization": `Bearer ${token}`
+  };
+
+  if (challengeId) {
+    headers["X-CHALLENGE-ID"] = challengeId;
+  }
+
+  return headers;
+}
+
+async function reinicializarSimulador() {
+  console.log("🔄 Reinicializando simulador para novo desafio");
+
+  // 🔥 LIMPA ESTADO ANTIGO
+  rodadaAtual = null;
+  rodadaEmAndamento = null;
+  rodadas = {};
+
+  Object.keys(timesSelecionadosPorRodada).forEach(k => delete timesSelecionadosPorRodada[k]);
+  Object.keys(contadorAdversarios).forEach(k => delete contadorAdversarios[k]);
+
+  atualizarListaLateral();
+
+  // 🔑 RECARREGA CONTEXTO CORRETO
+  await carregarDesafioAtivo();
+  await buscarJogos();
+  await carregarPalpitesSalvos();
+}
+
+function mostrarAvisoBloqueio(el, mensagem) {
+
+  // 🔕 não cria tooltip se não tiver mensagem
+  if (!mensagem) return;
+
+  const existente = el.querySelector(".tooltip-bloqueio");
+  if (existente) existente.remove();
+
+  const tooltip = document.createElement("div");
+  tooltip.className = "tooltip-bloqueio";
+  tooltip.textContent = mensagem;
+
+  el.appendChild(tooltip);
+
+  el.classList.add("bloqueado-alerta");
+
+  setTimeout(() => {
+    el.classList.remove("bloqueado-alerta");
+    tooltip.remove();
+  }, 1400);
+}
+
+// ==== INICIALIZAÇÃO ====
+(async function init() {
+  await carregarDesafioAtivo();   // 🔑 desafio manda
+  await buscarJogos();            // monta rodadas
+  await carregarPalpitesSalvos(); // aplica palpites
+})();
+
+// 🔔 QUANDO O DESAFIO MUDA, REINICIA O SIMULADOR
+document.addEventListener("desafioAlterado", async () => {
+  console.log("🔄 Desafio alterado — reiniciando simulador");
+
+  // 🔥 LIMPA ESTADO ANTIGO
+  rodadaAtual = null;
+  rodadaEmAndamento = null;
+  rodadas = {};
+
+  Object.keys(timesSelecionadosPorRodada).forEach(k => delete timesSelecionadosPorRodada[k]);
+  Object.keys(contadorAdversarios).forEach(k => delete contadorAdversarios[k]);
+
+  atualizarListaLateral();
+
+  // 🔑 RECARREGA TUDO PARA O NOVO DESAFIO
+  await carregarDesafioAtivo();
+  await buscarJogos();
+  await carregarPalpitesSalvos();
+});
+
+
+const modalReset = document.getElementById("confirmacaoReset");
+const btnConfirmarReset = document.getElementById("btnConfirmarReset");
+const btnCancelarReset = document.getElementById("btnCancelarReset");
+
+document.getElementById("btnResetSimulacao").addEventListener("click", () => {
+  if (statusDesafio === "aguardando" || statusDesafio === "finalizado") return;
+  if (jogadorEliminado) return;
+
+  modalReset.classList.add("ativo");
+});
+
+btnCancelarReset.addEventListener("click", () => {
+  modalReset.classList.remove("ativo");
+});
+
+btnConfirmarReset.addEventListener("click", async () => {
+  // 🔥 limpa estado local
+  Object.keys(timesSelecionadosPorRodada).forEach(k => delete timesSelecionadosPorRodada[k]);
+  Object.keys(contadorAdversarios).forEach(k => delete contadorAdversarios[k]);
+
+  // 🔄 recarrega palpites do banco
+  await carregarPalpitesSalvos();
+
+  modalReset.classList.remove("ativo");
+});
+
+  </script>
+
+</body>
+</html>

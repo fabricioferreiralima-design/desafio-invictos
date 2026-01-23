@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Início</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  
+</head>
+
+
+<body>
+<script src="authGuard.js"></script>
+
+<div class="topo-palpitar">
+<header>
+  <div class="nav-bar">
+
+    <div class="nav-left"></div>
+
+    <ul class="nav-center">
+      <li><a href="index.html" id="linkInicio">Início</a></li>
+      <li><a href="palpitar.html" id="linkPalpitar">Palpitar!</a></li>
+      <li><a href="simulador.html" id="linkSimulador">Simulador</a></li>
+    </ul>
+
+    <div class="user-menu">
+      <button class="menu-btn" id="btnMenuUser">☰</button>
+
+      <div class="menu-dropdown hidden" id="menuDropdown">
+        <button id="btnLogout">🚪 Sair</button>
+      </div>
+    </div>
+
+  </div>
+</header>
+
+<!-- ✅ SELETOR DE DESAFIO (ESTAVA FALTANDO) -->
+  <div id="seletorDesafioContainer" style="display:none;">
+    <div>
+      <strong>🎯 Desafio:</strong>
+      <select id="selectDesafioGlobal"></select>
+    </div>
+  </div>
+
+<script src="/js/seletorDesafio.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", initSeletorDesafio);
+</script>
+
+</div>
+
+<script src="/js/alertaVerificacao.js"></script>
+
+<div class="container index-hero">
+  <h1>🏆 Bem-vindo ao Desafio Invictos</h1>
+
+  <p class="hero-subtitle">
+    Você está participando de um jogo de sobrevivência.
+    <strong>Um palpite errado e você está fora!</strong>
+  </p>
+
+  <!-- FAIXA COMO JOGAR -->
+  <div class="como-jogar-cta" id="btnComoJogar">
+    <span>🎮 Como jogar?</span>
+    <small>Clique aqui e entenda o desafio</small>
+  </div>
+</div>
+
+
+<div id="statusJogador" style="
+  max-width: 800px;
+  margin: 20px auto;
+  padding: 15px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 18px;
+  display: none;
+"></div>
+
+
+<section class="index-dashboard">
+  <div class="index-dashboard-inner">
+
+    <!-- COLUNA ESQUERDA -->
+    <div class="index-card">
+      <h3>📅 Sua trajetória no desafio</h3>
+
+      <div class="timeline">
+        <div class="timeline-line"></div>
+        <div id="timelineContainer">
+          <p class="vazio">Carregando palpites...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLUNA DIREITA -->
+    <div class="index-cards">
+
+      <div class="index-card index-card-desafio">
+        <h3>📊 O Desafio</h3>
+
+        <div class="stat">
+          <span>👥 Jogadores que começaram</span>
+          <strong id="statIniciaram">—</strong>
+        </div>
+
+        <div class="stat">
+          <span>🟢 Ainda vivos</span>
+          <strong class="alive" id="statVivos">—</strong>
+        </div>
+
+        <div class="stat">
+          <span>🔴 Eliminados</span>
+          <strong class="dead" id="statEliminados">—</strong>
+        </div>
+
+        <div class="destaque">
+          ⚔️  <strong id="statPercentual"></strong><strong>%</strong> dos jogadores continuam vivos!
+        </div>
+      </div>
+
+      <div class="index-card index-card-rodada">
+  <h3>🔥 Última Rodada</h3>
+
+  <div class="destaque leve" id="statRodadaTitulo">
+    Rodada — —
+  </div>
+
+  <div class="stat texto">
+    💥 <strong id="statEliminadosRodada">—</strong> jogadores foram eliminados nesta rodada
+  </div>
+
+  <div class="stat coluna">
+    <strong>📊 Times mais escolhidos</strong>
+    <ul id="statTopTimes"></ul>
+  </div>
+
+  <div class="destaque mortal">
+    ☠️ <strong>Time mais mortal:</strong>
+    <span id="statTimeMortal">—</span>
+  </div>
+</div>
+
+    </div>
+  </div>
+</section>
+<script>
+
+let rodadaAtualGlobal = null;
+
+
+  async function carregarContextoDoJogo() {
+  const token = localStorage.getItem("authToken");
+
+  if (!token) {
+    return null;
+  }
+
+  const res = await fetch("/api/jogo/contexto", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+  });
+
+  if (!res.ok) {
+    throw new Error("Erro ao carregar contexto do jogo");
+  }
+
+  const data = await res.json();
+  return data.desafio;
+}
+
+  // Destacar o link ativo no menu
+  const paginaAtual = window.location.pathname.split("/").pop();
+  if (paginaAtual.includes("index")) document.getElementById("linkInicio").classList.add("ativo");
+  else if (paginaAtual.includes("palpitar")) document.getElementById("linkPalpitar").classList.add("ativo");
+  else if (paginaAtual.includes("simulador")) document.getElementById("linkSimulador").classList.add("ativo");
+
+  // Carregar histórico de palpites
+  async function carregarLinhaDoTempo() {
+  const container = document.getElementById("timelineContainer");
+  container.innerHTML = "<p class='vazio'>Carregando palpites...</p>";
+
+  try {
+    const token = localStorage.getItem("authToken");
+
+    const res = await fetch("/api/linha-do-tempo", {
+    headers: getAuthHeaders()});
+
+    if (!res.ok) {
+      container.innerHTML = "<p class='vazio'>Erro ao carregar linha do tempo.</p>";
+      return;
+    }
+
+    const dados = await res.json();
+
+    if (!dados.length) {
+      container.innerHTML = "<p class='vazio'>Nenhum palpite encontrado.</p>";
+      return;
+    }
+
+    container.innerHTML = dados.map(item => {
+      let classe = "neutro";
+      let statusTexto = "❓ Aguardando resultado";
+
+   if (rodadaAtualGlobal && item.rodada === rodadaAtualGlobal) {
+  classe += " atual";
+}
+
+      if (item.status === "sobreviveu") {
+        classe = "sobreviveu";
+        statusTexto = "✅ Sobreviveu";
+      } else if (item.status === "eliminado") {
+        classe = "eliminado";
+        statusTexto = "❌ Eliminado";
+      }
+
+      return `
+       <div class="timeline-row ${classe}">
+  <div class="timeline-dot"></div>
+
+  <div class="timeline-item">
+    <div class="rodada">Rodada ${item.rodada}</div>
+    <div class="escolha">Time escolhido: <strong>${item.time}</strong></div>
+    <div class="placar">${item.placar}</div>
+    <div class="status">${statusTexto}</div>
+  </div>
+</div>
+      `;
+    }).join("");
+
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "<p class='vazio'>Erro ao carregar dados.</p>";
+  }
+
+  
+}
+
+
+async function carregarContextoIndex() {
+  const token = localStorage.getItem("authToken");
+
+  if (!token) {
+    mostrarMensagem("🔐 Faça login para participar do desafio.");
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/jogo/contexto", {
+    headers: getAuthHeaders()
+    });
+
+    if (!res.ok) {
+      mostrarMensagem("⚠️ Nenhum desafio ativo no momento.");
+      return;
+    }
+
+    const data = await res.json();
+
+    interpretarContextoIndex(data);
+
+  } catch (err) {
+    console.error(err);
+    mostrarMensagem("❌ Erro ao carregar informações do jogo.");
+  }
+}
+
+function interpretarContextoIndex(data) {
+  const { desafio, usuario } = data;
+
+  rodadaAtualGlobal = desafio.rodadaAtual;
+
+  // 🟥 DESAFIO FINALIZADO
+  if (desafio.status === "finalizado") {
+    if (usuario.status === "eliminado") {
+      mostrarMensagem(
+        `🏁 Aqui acabou chefe. Você foi eliminado na rodada ${usuario.rodadaEliminacao}.`
+      );
+    } else {
+      mostrarMensagem(
+        "🏆 Mandou bem demais! Você foi o campeão dessa edição. Passa o pix!"
+      );
+    }
+    return;
+  }
+
+  // ❌ USUÁRIO ELIMINADO (independente do status)
+  if (usuario.status === "eliminado") {
+    mostrarMensagem(
+      `❌ Deu ruim! Você foi eliminado na rodada ${usuario.rodadaEliminacao}.`
+    );
+    return;
+  }
+
+  // 🟡 DESAFIO AGUARDANDO (rodada em andamento)
+  if (desafio.status === "aguardando") {
+    mostrarMensagem(
+      "⏳ A rodada está em andamento. Espero que sua escolha não te decepcione."
+    );
+    return;
+  }
+
+  // 🟢 DESAFIO INICIANDO ou ATIVO
+  if (desafio.status === "iniciando" || desafio.status === "ativo") {
+
+    // ainda não palpitou
+    if (!usuario.jaPalpitou) {
+      if (desafio.status === "iniciando") {
+        mostrarMensagem(
+          "🔥 Chega mais! O desafio já vai começar. É hora de palpitar."
+        );
+      } else {
+        mostrarMensagem(
+          `⚽ Ufa, você sobreviveu à rodada ${desafio.rodadaAtual - 1}. Bora pra próxima. Hora de palpitar a rodada ${desafio.rodadaAtual}.`
+        );
+      }
+      return;
+    }
+
+    // já palpitou
+    mostrarMensagem(
+      `✅ Boa! Você já palpitou na rodada ${desafio.rodadaAtual}. Agora é orar, fera.`
+    );
+    return;
+  }
+
+  // fallback de segurança
+  mostrarMensagem("⚠️ Estado do desafio desconhecido.");
+}
+
+function getAuthHeaders() {
+  const token = localStorage.getItem("authToken");
+  const challengeId = localStorage.getItem("challengeIdSelecionado");
+
+  const headers = {
+    "Authorization": `Bearer ${token}`
+  };
+
+  if (challengeId) {
+    headers["X-CHALLENGE-ID"] = challengeId;
+  }
+
+  return headers;
+}
+
+async function carregarEstatisticasIndex() {
+  const cardsContainer = document.querySelector(".index-cards");
+
+  try {
+    const token = localStorage.getItem("authToken");
+
+    const res = await fetch("/api/index/estatisticas", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) throw new Error("Erro ao buscar estatísticas");
+
+    const data = await res.json();
+
+    // 🔒 REGRA DE NEGÓCIO:
+    // ainda estamos na rodada inicial?
+    if (data.desafio.rodadaAtual === data.desafio.rodadaInicial) {
+      // 👉 NÃO existe rodada encerrada
+      cardsContainer.style.display = "none";
+      return; // ⛔ para aqui, não preenche nada
+    }
+
+    // ✅ já existe rodada encerrada
+    cardsContainer.style.display = "flex";
+
+    // ===== CARD 1 — DESAFIO =====
+    document.getElementById("statIniciaram").textContent =
+      data.jogadores.iniciaram;
+
+    document.getElementById("statVivos").textContent =
+      data.jogadores.vivos;
+
+    document.getElementById("statEliminados").textContent =
+      data.jogadores.eliminados;
+
+    document.getElementById("statPercentual").textContent =
+      data.jogadores.percentualVivos;
+
+    // ===== CARD 2 — RODADA =====
+    document.getElementById("statRodadaTitulo").textContent =
+      `Rodada ${data.desafio.rodadaResumo} — resumo`;
+
+    document.getElementById("statEliminadosRodada").textContent =
+      data.rodada.eliminados;
+
+    const ul = document.getElementById("statTopTimes");
+    ul.innerHTML = "";
+
+    data.rodada.topTimes.forEach(t => {
+      const li = document.createElement("li");
+      li.textContent = `${t._id} — ${t.total} palpites`;
+      ul.appendChild(li);
+    });
+
+    document.getElementById("statTimeMortal").textContent =
+      data.rodada.timeMortal;
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+
+
+function mostrarMensagem(texto) {
+  const box = document.getElementById("statusJogador");
+  if (!box) return;
+
+  box.style.display = "block";
+  box.textContent = texto;
+
+  // reset visual
+  box.style.background = "linear-gradient(180deg, #EEF2FF, #FFFFFF)";
+  box.style.color = "#1E3A8A";
+  box.style.borderColor = "#E0E7FF";
+
+  // estados visuais por contexto
+  if (texto.includes("eliminado")) {
+    box.style.background = "linear-gradient(180deg, #FEE2E2, #FFFFFF)";
+    box.style.color = "#7F1D1D";
+    box.style.borderColor = "#FCA5A5";
+  }
+
+  if (texto.includes("campeão")) {
+    box.style.background = "linear-gradient(180deg, #ECFDF5, #FFFFFF)";
+    box.style.color = "#065F46";
+    box.style.borderColor = "#6EE7B7";
+  }
+}
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  carregarContextoIndex();
+  carregarLinhaDoTempo();
+  carregarEstatisticasIndex();
+});
+
+document.addEventListener("desafioAlterado", async () => {
+  console.log("🔄 Desafio alterado — recarregando linha do tempo");
+  await carregarLinhaDoTempo();
+});
+
+const btnMenuUser = document.getElementById("btnMenuUser");
+const menuDropdown = document.getElementById("menuDropdown");
+const btnLogout = document.getElementById("btnLogout");
+
+btnMenuUser.addEventListener("click", (e) => {
+  e.stopPropagation();
+  menuDropdown.classList.toggle("hidden");
+});
+
+// fecha clicando fora
+document.addEventListener("click", () => {
+  menuDropdown.classList.add("hidden");
+});
+
+// logout real
+btnLogout.addEventListener("click", () => {
+  localStorage.removeItem("authToken");
+  localStorage.removeItem("challengeIdSelecionado");
+
+  window.location.href = "/login.html";
+});
+
+</script>
+
+<div class="modal-confirmacao" id="modalComoJogar">
+  <div class="modal-box" style="max-width: 520px; text-align:left;">
+    <h3>🎯 Como funciona o Desafio Invictos</h3>
+
+    <p>
+      O Desafio Invictos é um jogo de sobrevivência baseado no Brasileirão.
+      Cada rodada você escolhe <strong>um time para vencer</strong>.
+    </p>
+
+    <ul style="padding-left:18px; font-size:14px; line-height:1.5;">
+      <li>⚽ Você escolhe 1 time por rodada</li>
+      <li>❌ Se o time perder, você é eliminado</li>
+      <li>🔁 Não pode repetir o mesmo time</li>
+      <li>⚠️ O mesmo adversário só pode ser enfrentado 3 vezes</li>
+      <li>🏆 O último jogador vivo vence o desafio</li>
+    </ul>
+
+    <hr style="margin:16px 0; border:none; border-top:1px solid #E5E7EB;">
+
+    <p><strong>📍 Páginas principais:</strong></p>
+    <ul style="padding-left:18px; font-size:14px;">
+      <li><strong>Início</strong> → Acompanhe sua trajetória</li>
+      <li><strong>Palpitar</strong> → Escolha seu time da rodada</li>
+      <li><strong>Simulador</strong> → Teste cenários futuros</li>
+    </ul>
+
+    <div class="acoes" style="margin-top:20px;">
+      <button class="toast-btn fechar" onclick="fecharComoJogar()">Entendi</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const modalComoJogar = document.getElementById("modalComoJogar");
+const btnComoJogar = document.getElementById("btnComoJogar");
+
+btnComoJogar.addEventListener("click", () => {
+  modalComoJogar.classList.add("ativo");
+});
+
+function fecharComoJogar() {
+  modalComoJogar.classList.remove("ativo");
+}
+</script>
+
+
+</body>
+</html>

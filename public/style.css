@@ -1,0 +1,1890 @@
+/* =========================================================
+   BASE GLOBAL
+   ========================================================= */
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #0B1220;
+  color: #E5E7EB;
+}
+
+header {
+  background: #0B3C7D; /* azul mais sóbrio */
+  padding: 6px 0;
+  margin-bottom: 0px;
+}
+
+
+nav ul li {
+  margin: 0 15px;
+}
+
+nav ul li a {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  transition: background .2s ease, color .2s ease;
+}
+
+nav ul li a:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+nav ul li a.ativo {
+  background: white;
+  color: #0B3C7D;
+}
+/* =========================================================
+   CONTAINER
+   ========================================================= */
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 20px;
+  background: white;
+  color: #111;
+  border-radius: 10px;
+}
+
+/* =========================================================
+   TEXTO DE MISSÃO
+   ========================================================= */
+.page-palpitar .mensagem-intro {
+   text-align: center;
+  
+  margin: 0 auto 18px;
+
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.page-palpitar .mensagem-intro strong {
+  font-weight: 800;
+  color: #2563EB;
+}
+
+/* =========================================================
+   HERO — RODADA + CONTADOR
+   ========================================================= */
+.page-palpitar .titulo-rodada {
+  display: block;
+  width: fit-content;
+  margin: 6px auto;
+
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+
+  padding: 10px 18px;
+  background: linear-gradient(90deg, #EEF2FF, #FFFFFF);
+  border-radius: 12px;
+  border: 1px solid #E0E7FF;
+  color: #1E3A8A;
+}
+
+.page-palpitar #contador {
+  display: block;
+  width: fit-content;
+  margin: 0 auto 22px;
+
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 700;
+
+  color: #7F1D1D;
+  background: #FEE2E2;
+  border: 1px solid #FCA5A5;
+  border-radius: 999px;
+}
+
+/* =========================================================
+   CARD DE JOGO
+   ========================================================= */
+.page-palpitar .jogo,
+.page-simulador .jogo {
+  background: linear-gradient(180deg, #ffffff 0%, #F9FAFB 100%);
+  border: 1px solid #E5E7EB;
+  border-radius: 14px;
+
+  padding: 16px 18px;
+  margin-bottom: 10px;
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+ 
+
+  box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+}
+
+/* =========================================================
+   DATA / HORA / LOCAL (MESMO ESTILO)
+   ========================================================= */
+.data-hora,
+.local {
+  font-size: 13px;
+  font-weight: 600;
+  color: #6B7280;
+  opacity: 0.85;
+  text-align: center;
+}
+
+/* =========================================================
+   LINHA DE CONFRONTO
+   ========================================================= */
+.linha-confronto {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 26px;
+}
+
+/* =========================================================
+   TIMES
+   ========================================================= */
+
+.time {
+  background: linear-gradient(
+    180deg,
+    #FACC15 0%,
+    #FBBF24 100%
+  );
+
+  border: 2px solid #EAB308;
+  border-radius: 14px;
+
+  padding: 14px 12px;
+  width: 132px;
+
+  text-align: center;
+  cursor: pointer;
+
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+
+  color: #111827;
+
+  box-shadow:
+    0 6px 14px rgba(0,0,0,0.16),
+    inset 0 1px 0 rgba(255,255,255,0.45);
+
+  transition:
+    transform .15s ease,
+    box-shadow .15s ease,
+    filter .15s ease;
+}
+
+.time:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 16px rgba(0,0,0,0.18),
+    inset 0 1px 0 rgba(255,255,255,0.45);
+
+  filter: brightness(1.03);
+}
+
+.time.selecionado {
+  background: linear-gradient(
+    180deg,
+    #4ADE80 0%,
+    #22C55E 100%
+  );
+
+  border-color: #16A34A;
+  color: #064E3B;
+
+  box-shadow:
+    0 0 0 3px rgba(34,197,94,0.35),
+    0 8px 18px rgba(0,0,0,0.22);
+}
+
+.time.desativado {
+  background: #E5E7EB;
+  color: #6B7280;
+  border-color: #D1D5DB;
+  box-shadow: none;
+  cursor: not-allowed;
+
+  /* efeito visual SEM afetar filhos */
+  filter: grayscale(100%) brightness(0.95);
+}
+
+/* =========================================================
+   PLACAR (NEUTRO)
+   ========================================================= */
+.placar {
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.35;
+}
+
+/* =========================================================
+   ODD — DEFINIÇÃO ÚNICA (FUNCIONA AGORA)
+   ========================================================= */
+.time-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.page-palpitar .odd {
+  font-size: 12px;
+  font-weight: 700;
+
+  color: #1D4ED8;
+  background: #EEF2FF;
+
+  border: 1px solid #C7D2FE;
+  border-radius: 999px;
+
+  padding: 4px 10px;
+  text-decoration: none;
+  cursor: pointer;
+
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.page-palpitar .odd:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 10px rgba(37,99,235,0.25);
+}
+
+.page-simulador .odd {
+  display: none;
+}
+
+/* =========================================================
+   BOTÃO
+   ========================================================= */
+#btnConfirmar {
+  background-color: #22C55E;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+#btnConfirmar:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   VIDEO / MODAL / OVERLAY (INTACTOS)
+   ========================================================= */
+.video-container {
+  max-width: 900px;
+  margin: 20px auto;
+}
+
+.video-container video {
+  width: 100%;
+  max-height: auto;
+  border-radius: 12px;
+  background: #000;
+}
+
+.page-palpitar .modal {
+  display: none; /* começa escondido */
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  background: rgba(0,0,0,0.85);
+}
+
+.page-palpitar .modal.ativo {
+  display: flex; /* só aparece quando ativado */
+  align-items: center;
+  justify-content: center;
+}
+
+
+.page-palpitar .modal[style*="display: block"] {
+  display: flex;
+}
+
+#bloqueioEliminado {
+  display: none;
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 20;
+}
+
+/* =========================================================
+   AJUSTE C1 — ÂNCORA VISUAL DO CONFRONTO
+   ========================================================= */
+
+.vs {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 1px;
+
+  color: #9CA3AF;
+
+  padding: 6px 10px;
+  border-radius: 999px;
+
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
+
+  user-select: none;
+  pointer-events: none;
+}
+/* =========================================================
+   C2 — CENTRO DO CONFRONTO (ESTADO DO JOGO)
+   ========================================================= */
+
+/* linha principal ganha identidade */
+.page-palpitar .linha-confronto {
+  align-items: center; /* volta ao centro */
+   padding: 4px 0;
+}
+
+/* bloco central (VS ou placar futuro) */
+.page-palpitar .placar {
+  min-width: 42px;
+  text-align: center;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  color: #6B7280;
+  background: transparent;
+  border: none;
+
+  pointer-events: none; /* nunca interfere no clique */
+}
+
+/* VS */
+.page-palpitar .placar {
+  margin-top: 12px; /* alinha com o nome do time */
+}
+.page-palpitar .vs {
+  position: relative;
+  top: -4px; /* ajuste fino real */
+}
+
+.page-palpitar .data-hora {
+  margin-bottom: 10px;
+}
+.page-palpitar .linha-confronto {
+  margin: 6px 0 10px;
+}
+
+.page-palpitar .local {
+  margin-top: 6px;
+  font-size: 12.5px;
+  opacity: 0.75;
+}
+
+/* =========================================================
+   CTA — CONFIRMAR PALPITE
+   ========================================================= */
+
+.page-palpitar #btnConfirmar {
+  display: block;
+  margin: 30px auto 10px; /* centraliza de verdade */
+
+  padding: 14px 28px;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+
+  border-radius: 999px;
+
+  background: linear-gradient(
+    180deg,
+    #22C55E 0%,
+    #16A34A 100%
+  );
+
+  box-shadow:
+    0 10px 22px rgba(34,197,94,0.35),
+    inset 0 1px 0 rgba(255,255,255,0.4);
+
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.page-palpitar #btnConfirmar:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 14px 30px rgba(34,197,94,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.45);
+}
+
+.page-palpitar #btnConfirmar:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+}
+
+/* =========================================================
+   MODAL DE VÍDEO — CENTRALIZAÇÃO REAL
+   ========================================================= */
+
+.page-palpitar .modal-content {
+display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.video-container {
+    width: 100%;
+  max-width: 640px;
+}
+/* =========================================================
+   TOPO DA EXPERIÊNCIA
+   ========================================================= */
+
+.topo-palpitar {
+    background: linear-gradient(
+    180deg,
+    #0B3C7D 0%,
+    #072A57 100%
+  );
+}
+/* =========================================================
+   SELETOR DE DESAFIO
+   ========================================================= */
+
+.page-palpitar select {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  box-shadow: 0 6px 14px rgba(0,0,0,0.25);
+}
+
+#seletorDesafioContainer {
+  background: transparent;
+  border: none;
+
+  padding: 8px 0 12px;
+}
+
+#seletorDesafioContainer > div {
+  max-width: 900px;
+  margin: auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  color: rgba(255,255,255,0.85);
+}
+
+#selectDesafioGlobal {
+ 
+  background: white;
+  color: #0B3C7D;
+
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: none;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+
+
+
+
+/* =========================================================
+   GAME BAR — TOPO DA EXPERIÊNCIA
+   ========================================================= */
+
+.topo-palpitar {
+  background: linear-gradient(
+    180deg,
+    #0B3C7D 0%,
+    #072A57 100%
+  );
+}
+
+/* =========================================================
+   HERO DA RODADA — SIMULADOR
+   ========================================================= */
+
+.hero-rodada-simulador {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+
+  margin-bottom: 18px;
+}
+
+.hero-rodada-simulador .nav-rodada {
+  background: #F3F4F6;
+  border: 1px solid #E5E7EB;
+
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+
+  color: #374151;
+
+  transition: background .15s ease, transform .15s ease;
+}
+
+.hero-rodada-simulador .nav-rodada:hover:not(:disabled) {
+  background: #E5E7EB;
+  transform: translateY(-1px);
+}
+
+.hero-rodada-simulador .nav-rodada:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-simulador #navegacao {
+  margin-bottom: 6px;
+}
+
+
+/* Bloco central do confronto no simulador */
+.page-simulador .time:first-of-type {
+  margin-top: 8px;
+}
+
+.page-simulador .time:last-of-type {
+  margin-bottom: 8px;
+}
+
+.page-simulador .vs {
+  margin: 8px 0;
+}
+
+.page-simulador .placar {
+  margin: 4px 0;
+}
+
+.page-simulador #areaJogos {
+  margin-top: -8px;
+}
+
+.page-simulador .data-hora {
+  margin-bottom: 6px; /* aumenta o respiro */
+}
+
+/* =========================================================
+   LISTA LATERAL — FLUTUANTE, INDEPENDENTE E COM SCROLL
+   ========================================================= */
+
+.page-simulador #selecionadosContainer {
+  position: fixed;
+  top: 80px;              /* abaixo do topo */
+  right: 24px;             /* lado direito da tela */
+
+  width: 260px;
+  max-height: calc(100vh - 160px);
+
+  background: #0F172A;
+  color: #E5E7EB;
+
+  border-radius: 16px;
+  padding: 14px;
+
+  overflow-y: auto;        /* ✅ scroll próprio */
+  z-index: 100;
+
+  box-shadow: 0 20px 40px rgba(0,0,0,0.45);
+}
+
+.page-simulador #selecionadosContainer h3,
+.page-simulador #selecionadosContainer h4 {
+  margin: 6px 0 8px;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.page-simulador #selecionadosContainer ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+
+.page-simulador #selecionadosContainer li {
+  font-size: 13px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #020617;
+  margin-bottom: 6px;
+}
+
+/* =========================================================
+   FEEDBACK — TIME BLOQUEADO
+   ========================================================= */
+
+.time.bloqueado-alerta {
+  animation: shake 0.35s ease;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.4);
+}
+
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(-3px); }
+  50%  { transform: translateX(3px); }
+  75%  { transform: translateX(-2px); }
+  100% { transform: translateX(0); }
+}
+
+/* Tooltip */
+.tooltip-bloqueio {
+  position: absolute;
+  top: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  background: #EF4444;
+  color: white;
+
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+
+  border-radius: 999px;
+  white-space: nowrap;
+
+  box-shadow: 0 8px 18px rgba(239,68,68,0.45);
+  z-index: 10;
+}
+
+/* =========================================================
+   TOOLTIP — MOTIVO DO BLOQUEIO (HOVER)
+   ========================================================= */
+
+.time.desativado {
+  position: relative;
+}
+
+.time.desativado::after {
+  content: attr(data-motivo);
+  position: absolute;
+
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+
+  /* 🔴 FUNDO TOTALMENTE OPACO */
+  background: #111827; /* slate-900 real */
+  color: #FFFFFF;
+
+  padding: 8px 14px;
+  border-radius: 10px;
+
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+
+  opacity: 0;
+  pointer-events: none;
+
+  /* 🔥 SEM rgba AQUI */
+  border: 2px solid #000000;
+
+  /* sombra curta e forte (não “embaçada”) */
+  box-shadow: 0 6px 12px rgba(0,0,0,0.8);
+
+  transition: opacity .15s ease, transform .15s ease;
+  z-index: 999;
+}
+
+.time.desativado:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* =========================================================
+   HERO — STATUS DO JOGADOR (INDEX)
+   ========================================================= */
+
+#statusJogador {
+  display: none;
+  margin: 24px auto 28px;
+  max-width: 900px;
+
+  padding: 22px 26px;
+  border-radius: 16px;
+
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.4;
+
+  text-align: center;
+
+  background: linear-gradient(180deg, #EEF2FF, #FFFFFF);
+  color: #1E3A8A;
+
+  border: 1px solid #E0E7FF;
+  box-shadow: 0 14px 32px rgba(30, 58, 138, 0.15);
+}
+/* =========================================================
+   INDEX — DASHBOARD (APÓS STATUS)
+   ========================================================= */
+
+.index-dashboard {
+  margin: 10px 0 60px;
+}
+
+.index-dashboard-inner {
+  max-width: 900px;
+  margin: 0 auto;
+
+  background: linear-gradient(180deg, #FFFFFF, #F9FAFB);
+  border-radius: 18px;
+
+  padding: 26px;
+
+  box-shadow:
+    0 18px 40px rgba(0,0,0,0.18);
+}
+
+.index-dashboard-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+}
+
+/* cards internos */
+.index-card {
+  background: #F9FAFB;
+  border-radius: 14px;
+  padding: 18px 20px;
+
+  box-shadow:
+    0 8px 20px rgba(0,0,0,0.1);
+
+  color: #111827;
+}
+
+.index-card h3 {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 800;
+}
+/* =========================================================
+   INDEX — TIMELINE (ESTRUTURA CORRETA)
+   ========================================================= */
+
+.timeline {
+  position: relative;
+}
+
+/* linha vertical fixa */
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #E5E7EB;
+}
+
+/* linha horizontal (linha + card) */
+.timeline-row {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding-left: 36px;
+  margin-bottom: 22px;
+}
+
+/* bolinha */
+.timeline-dot {
+  position: absolute;
+  left: 4px;
+  top: 18px;
+
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+
+  background: #9CA3AF;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 0 0 2px #E5E7EB;
+}
+
+/* estados */
+.timeline-row.sobreviveu .timeline-dot {
+  background: #22C55E;
+}
+
+.timeline-row.eliminado .timeline-dot {
+  background: #EF4444;
+}
+
+/* card real */
+.timeline-item {
+  background: #F9FAFB;
+  border-radius: 12px;
+  padding: 14px 16px;
+
+  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+  color: #111827;
+
+  width: 100%;
+}
+
+/* textos */
+.timeline-item .rodada {
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.timeline-item .escolha {
+  font-size: 14px;
+}
+
+.timeline-item .status {
+  font-size: 13px;
+  opacity: 0.75;
+}
+/* destaque da rodada atual */
+.timeline-row.atual .timeline-item {
+  background: linear-gradient(180deg, #EEF2FF, #FFFFFF);
+  border-left: 4px solid #2563EB;
+}
+
+.timeline-row.atual .rodada {
+  color: #1D4ED8;
+}
+.timeline-row.sobreviveu .timeline-dot {
+  background: #22C55E;
+}
+
+.timeline-row.eliminado .timeline-dot {
+  background: #EF4444;
+}
+
+.timeline-row.neutro .timeline-dot {
+  background: #9CA3AF;
+}
+.timeline-item .status {
+  font-weight: 700;
+}
+/* =========================================================
+   INDEX — LAYOUT FINAL (TIMELINE + CARDS)
+   ========================================================= */
+
+.index-dashboard {
+  margin: 20px 0 60px;
+}
+
+.index-dashboard-inner {
+  max-width: 900px;
+  margin: 0 auto;
+
+  display: grid;
+  grid-template-columns: 260px 1fr; /* timeline | cards */
+  gap: 24px;
+}
+
+/* COLUNA DIREITA */
+.index-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* CARD BASE */
+.index-card {
+  background: linear-gradient(180deg, #FFFFFF, #F9FAFB);
+  border-radius: 18px;
+  padding: 22px 24px;
+
+  color: #111827;
+
+  box-shadow: 0 18px 40px rgba(0,0,0,0.18);
+}
+
+.index-card h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* CARD DESAFIO */
+.index-card-desafio h3 {
+  color: #0B5ED7;
+}
+
+/* CARD RODADA (DESTAQUE SUTIL) */
+.index-card-rodada {
+  border: 1px solid #FCA5A5;
+  box-shadow: 0 18px 40px rgba(220,38,38,0.18);
+}
+
+.index-card-rodada h3 {
+  color: #B91C1C;
+}
+
+/* STATS */
+.index-card .stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  font-size: 14.5px;
+  font-weight: 600;
+
+  padding: 8px 0;
+  border-bottom: 1px dashed #E5E7EB;
+}
+
+.index-card .stat.coluna {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.index-card .stat:last-child {
+  border-bottom: none;
+}
+
+.index-card strong {
+  font-size: 18px;
+}
+
+.index-card .alive {
+  color: #16A34A;
+}
+
+.index-card .dead {
+  color: #DC2626;
+}
+
+/* DESTAQUES */
+.index-card .destaque {
+  margin-top: 14px;
+  padding: 12px 14px;
+
+  background: #F1F5F9;
+  border-radius: 12px;
+
+  font-size: 14.5px;
+  font-weight: 700;
+}
+
+.index-card .destaque.leve {
+  background: #FEF2F2;
+}
+
+.index-card .destaque.mortal {
+  background: linear-gradient(180deg, #FEE2E2, #FFF);
+  color: #7F1D1D;
+}
+
+/* LISTA */
+.index-card ul {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0;
+}
+
+.index-card ul li {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+/* ===============================
+   CARD ÚLTIMA RODADA — POLIMENTO
+   =============================== */
+
+/* garante alinhamento à esquerda */
+.index-card-rodada {
+  text-align: left;
+}
+
+/* stats que são frases */
+.index-card .stat.texto {
+  justify-content: flex-start;
+  gap: 6px;
+  font-size: 14.5px;
+  line-height: 1.4;
+}
+
+/* destaque mortal mais legível */
+.index-card .destaque.mortal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  font-size: 14.5px;
+}
+
+.index-card .destaque.mortal strong {
+  font-size: 14px;
+  color: #7F1D1D;
+}
+
+.index-card .destaque.mortal span {
+  font-size: 15px;
+  font-weight: 800;
+}
+/* ===============================
+   MODAL CONFIRMAÇÃO RESET
+   =============================== */
+
+.modal-confirmacao {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.modal-confirmacao.ativo {
+  display: flex;
+}
+
+.modal-box {
+  background: linear-gradient(180deg, #FFFFFF, #F9FAFB);
+  border-radius: 18px;
+  padding: 26px 28px;
+  max-width: 360px;
+  width: 100%;
+  text-align: center;
+
+  box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+}
+
+.modal-box h3 {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.modal-box p {
+  font-size: 14px;
+  color: #6B7280;
+  margin-bottom: 18px;
+}
+
+.modal-box .acoes {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.modal-box button {
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: none;
+  font-weight: 800;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#btnCancelarReset {
+  background: #E5E7EB;
+  color: #111827;
+}
+
+#btnConfirmarReset {
+  background: linear-gradient(180deg, #F59E0B, #D97706);
+  color: white;
+  box-shadow: 0 8px 20px rgba(245,158,11,0.4);
+}
+
+#btnConfirmarReset:hover {
+  transform: translateY(-1px);
+}
+
+.time.selecionado.desativado {
+  opacity: 1;
+  filter: none;
+  background: linear-gradient(180deg, #22c55e, #16a34a);
+  color: #fff;
+  border: 2px solid #16a34a;
+}
+.tooltip-bloqueio:empty {
+  display: none !important;
+}
+
+/* Rodadas passadas = leitura pura */
+.time.passado {
+  pointer-events: none;
+  cursor: default;
+}
+
+/* remove feedback visual de clique */
+.time.passado:active,
+.time.passado:focus,
+.time.passado:focus-visible {
+  background: inherit !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+.toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.95);
+
+  background: #7c2d12;
+  color: #fff;
+
+  width: 380px;
+  max-width: calc(100vw - 40px);
+
+  padding: 18px 20px;
+  border-radius: 18px;
+
+  box-shadow: 0 30px 60px rgba(0,0,0,0.45);
+
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  z-index: 10000;
+
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.25s ease;
+}
+
+.toast.ativo {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+.toast.sucesso {
+  background: #065f46;
+}
+
+.toast.erro {
+  background: #7c2d12;
+}
+
+#toastActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.toast-btn {
+  background: #f59e0b;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  color: #111;
+}
+
+.toast-btn.fechar {
+  background: #444;
+  color: #fff;
+}
+#toastOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s ease;
+}
+
+#toastOverlay.ativo {
+  opacity: 1;
+  pointer-events: auto;
+}
+#videoPalpite {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ===============================
+   INDEX — HERO BOAS-VINDAS
+   =============================== */
+
+.index-hero {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.index-hero h1 {
+  font-size: 28px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  color: #0B3C7D;
+}
+
+.hero-subtitle {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #374151;
+  margin-bottom: 18px;
+}
+
+.hero-subtitle strong {
+  color: #1D4ED8;
+}
+
+/* ===============================
+   CTA — COMO JOGAR
+   =============================== */
+
+.como-jogar-cta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  margin-top: 12px;
+  padding: 14px 18px;
+
+  background: linear-gradient(180deg, #EEF2FF, #FFFFFF);
+  border: 1px solid #E0E7FF;
+  border-radius: 14px;
+
+  cursor: pointer;
+  transition: all .15s ease;
+
+  box-shadow: 0 10px 26px rgba(37,99,235,0.15);
+}
+
+.como-jogar-cta span {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1D4ED8;
+}
+
+.como-jogar-cta small {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.como-jogar-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(37,99,235,0.25);
+}
+/* ===============================
+   MODAL — COMO JOGAR (UX FIX)
+   =============================== */
+
+#modalComoJogar .modal-box {
+  background: linear-gradient(180deg, #FFFFFF, #F9FAFB);
+  color: #111827; /* TEXTO ESCURO REAL */
+}
+
+#modalComoJogar h3 {
+  color: #0B3C7D;
+}
+
+#modalComoJogar p {
+  color: #374151;
+}
+
+#modalComoJogar ul li {
+  color: #1F2937;
+  font-weight: 600;
+}
+
+#modalComoJogar strong {
+  color: #111827;
+}
+
+#modalComoJogar hr {
+  border-top: 1px solid #E5E7EB;
+}
+#modalComoJogar ul {
+  margin-top: 10px;
+}
+
+#modalComoJogar ul li {
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+#modalComoJogar p {
+  line-height: 1.55;
+}
+#modalComoJogar .toast-btn.fechar {
+  background: linear-gradient(180deg, #22C55E, #16A34A);
+  color: white;
+  box-shadow: 0 8px 18px rgba(34,197,94,0.35);
+}
+
+#modalComoJogar .toast-btn.fechar:hover {
+  transform: translateY(-1px);
+}
+/* ===============================
+   MENU DO USUÁRIO (LOGOUT)
+   =============================== */
+
+
+.menu-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  font-weight: 800;
+  transition: background .2s ease;
+}
+
+.menu-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.menu-dropdown {
+  margin-top: 8px;
+  background: #FFFFFF;
+  color: #111827;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  padding: 8px;
+  min-width: 140px;
+  position: absolute;
+  right: 0;
+}
+
+.menu-dropdown button {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background .15s ease;
+}
+
+.menu-dropdown button:hover {
+  background: #FEE2E2;
+  color: #7F1D1D;
+}
+
+header {
+  position: relative; /* 🔥 agora o menu gruda no header */
+}
+
+.hidden {
+  display: none !important;
+}
+/* ===============================
+   HEADER CORRETO (LAYOUT REAL)
+   =============================== */
+
+.nav-bar {
+  max-width: 900px;
+  margin: auto;
+    min-height: 44px;  /* altura de app moderna */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-left {
+  width: 40px; /* reserva espaço (equilíbrio visual) */
+}
+
+/* menu central */
+.nav-center {
+  list-style: none;
+  display: flex;
+  gap: 30px;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-center a {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  transition: background .2s ease;
+}
+
+.nav-center a:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.nav-center a.ativo {
+  background: white;
+  color: #0B3C7D;
+}
+
+/* menu usuário alinhado */
+.user-menu {
+  position: relative;
+}
+.menu-btn {
+  padding: 6px 10px;
+  font-size: 16px;
+  border-radius: 8px;
+}
+.topo-palpitar {
+  padding-bottom: 6px;
+}
+/* garante que o topo fique acima de tudo */
+.topo-palpitar {
+  position: relative;
+  z-index: 1000;
+}
+.menu-dropdown {
+  z-index: 2000;
+}
+.timeline .vazio {
+  margin-left: 36px; /* empurra pra direita, alinhando com os cards */
+}
+
+/* =================================================
+   MOBILE — INDEX (OBRIGATÓRIO)
+   ================================================= */
+
+@media (max-width: 768px) {
+
+  /* container geral */
+  .container {
+    padding: 16px;
+    border-radius: 0;
+  }
+
+  /* header */
+  .nav-bar {
+    padding: 0 12px;
+  }
+
+  .nav-center {
+    gap: 10px;
+  }
+
+  .nav-center a {
+    font-size: 13px;
+    padding: 5px 10px;
+  }
+
+  /* HERO */
+  .index-hero h1 {
+    font-size: 22px;
+  }
+
+  .hero-subtitle {
+    font-size: 14px;
+  }
+
+  /* DASHBOARD VIRA COLUNA */
+  .index-dashboard-inner {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  /* timeline primeiro */
+  .timeline {
+    margin-bottom: 22px;
+  }
+
+  /* cards depois */
+  .index-cards {
+    gap: 18px;
+  }
+}
+@media (max-width: 768px) {
+
+  .timeline-row {
+    padding-left: 28px;
+    gap: 14px;
+  }
+
+  .timeline-item {
+    padding: 12px 14px;
+  }
+
+  .timeline-item .rodada {
+    font-size: 13px;
+  }
+
+  .timeline-item .escolha {
+    font-size: 13px;
+  }
+
+  .timeline-item .status {
+    font-size: 12px;
+  }
+
+  .timeline-dot {
+    left: 2px;
+    width: 14px;
+    height: 14px;
+  }
+
+  .timeline::before {
+    left: 9px;
+  }
+}
+@media (max-width: 480px) {
+  .index-hero {
+    margin-bottom: 18px;
+  }
+
+  .como-jogar-cta {
+    padding: 12px 14px;
+  }
+
+  .como-jogar-cta span {
+    font-size: 15px;
+  }
+
+  .como-jogar-cta small {
+    font-size: 12px;
+  }
+}
+@media (max-height: 700px) {
+  #modalComoJogar .modal-box {
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+}
+@media (max-width: 480px) {
+  #statusJogador {
+    font-size: 16px;
+    padding: 16px 18px;
+  }
+}
+@media (max-width: 480px) {
+
+  .page-palpitar .linha-confronto {
+    gap: 14px;
+  }
+
+  .page-palpitar .time {
+    width: 100%;
+    max-width: 140px;
+    font-size: 14px;
+    padding: 12px 8px;
+  }
+
+  .page-palpitar .time-wrapper {
+    flex: 1;
+  }
+
+  .page-palpitar .vs {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-palpitar #btnConfirmar {
+    position: sticky;
+    bottom: 12px;
+    z-index: 50;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-palpitar .mensagem-intro {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  .page-palpitar .titulo-rodada {
+    font-size: 22px;
+    padding: 8px 14px;
+  }
+}
+@media (max-height: 700px) {
+  .page-palpitar .modal-content {
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 10px;
+  }
+
+  #videoPalpite {
+    max-height: 60vh;
+  }
+}
+@media (max-width: 480px) {
+  .nav-center {
+    gap: 6px;
+  }
+
+  .nav-center a {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
+  .menu-btn {
+    font-size: 16px;
+    padding: 6px 8px;
+  }
+}
+@media (max-width: 480px) {
+  .container {
+    padding: 14px 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-simulador #selecionadosContainer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+
+    width: 100%;
+    max-height: 45vh;
+
+    border-radius: 16px 16px 0 0;
+    padding: 14px 16px;
+
+    box-shadow: 0 -20px 40px rgba(0,0,0,0.45);
+    z-index: 2000;
+  }
+}
+@media (max-width: 480px) {
+  .page-simulador .jogo {
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+
+  .page-simulador .linha-confronto {
+    gap: 16px;
+  }
+
+  .page-simulador .local {
+    font-size: 12px;
+  }
+}
+@media (max-width: 480px) {
+  .hero-rodada-simulador .nav-rodada {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  .hero-rodada-simulador {
+    gap: 18px;
+  }
+}
+@media (max-width: 480px) {
+  .hero-rodada-simulador {
+    margin-bottom: 12px;
+  }
+
+  .page-simulador .titulo-rodada {
+    font-size: 22px;
+    padding: 8px 14px;
+  }
+}
+@media (max-height: 700px) {
+  .modal-confirmacao .modal-box {
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+}
+@media (max-width: 768px) {
+  body.page-simulador {
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  .page-simulador .container {
+    padding-bottom: 60px; /* espaço pro bottom sheet */
+  }
+}
+@media (max-width: 480px) {
+  .page-simulador .time {
+    padding: 14px 8px;
+    font-size: 14px;
+  }
+}
+/* ======================================
+   MOBILE — RESPIRO DOS CARDS
+   ====================================== */
+@media (max-width: 480px) {
+
+  .jogo {
+    padding: 14px 12px;
+    margin-bottom: 14px; /* 👈 separa os cards */
+  }
+
+  .data-hora {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+
+  .local {
+    margin-top: 6px;
+    font-size: 11.5px;
+  }
+
+  .linha-confronto {
+    margin: 8px 0 10px;
+  }
+}
+
+/* =================================================
+   MOBILE — CORREÇÃO DE ENCAVALAMENTO (SIMULADOR)
+   ================================================= */
+@media (max-width: 480px) {
+
+  .page-simulador .jogo {
+    padding: 16px 14px;
+    margin-bottom: 16px;
+  }
+
+  .page-simulador .data-hora {
+    margin-bottom: 10px; /* 🔥 separa do confronto */
+    line-height: 1.4;
+  }
+
+  .page-simulador .linha-confronto {
+    margin: 10px 0 12px; /* 🔥 cria bloco visual */
+  }
+
+  .page-simulador .placar {
+    min-height: 22px; /* 🔥 impede colapso vertical */
+    margin: 6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .page-simulador .local {
+    margin-top: 10px; /* 🔥 separa do placar */
+    font-size: 12px;
+    line-height: 1.4;
+  }
+}
+.page-simulador .jogo {
+  scroll-margin-top: 16px;
+}
+
+/* ==========================================
+   MOBILE — PADRONIZAR LARGURA DOS CARDS
+   ========================================== */
+@media (max-width: 480px) {
+
+  .page-palpitar .jogo,
+  .page-simulador .jogo {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+@media (max-width: 480px) {
+
+  .page-palpitar .linha-confronto,
+  .page-simulador .linha-confronto {
+    width: 100%;
+  }
+
+  .page-palpitar .time-wrapper,
+  .page-simulador .time-wrapper {
+    flex: 1;
+    min-width: 0; /* 🔥 isso é o segredo */
+  }
+}
+/* ==========================================
+   MOBILE — TIMES EM 2 LINHAS (LEGIBILIDADE)
+   ========================================== */
+@media (max-width: 480px) {
+
+  .page-palpitar .time,
+  .page-simulador .time {
+    white-space: normal;
+    overflow: hidden;
+
+    display: -webkit-box;
+    display: box;
+
+    -webkit-box-orient: vertical;
+    box-orient: vertical;
+
+    line-height: 1.15;
+    min-height: 38px;
+  }
+}
+
+/* ==========================================
+   MOBILE — CENTRALIZAÇÃO VERTICAL DOS TIMES
+   ========================================== */
+@media (max-width: 480px) {
+
+  .page-palpitar .time,
+  .page-simulador .time {
+    display: flex;                 /* 🔥 flex resolve tudo */
+    align-items: center;           /* centraliza verticalmente */
+    justify-content: center;       /* centraliza horizontalmente */
+
+    text-align: center;
+
+    white-space: normal;
+    overflow: hidden;
+
+    line-height: 1.15;
+    min-height: 40px;              /* altura base consistente */
+    padding: 10px 8px;             /* ajusta respiro interno */
+  }
+}
+
+/* ==========================================
+   MOBILE — REMOVE SCROLL LATERAL DO VÍDEO
+   ========================================== */
+@media (max-width: 768px) {
+
+  .video-container,
+  .video-container video {
+    max-width: 100%;
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    overflow-x: hidden; /* 🔥 trava o bug global */
+  }
+}
+.page-palpitar .modal-content {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+

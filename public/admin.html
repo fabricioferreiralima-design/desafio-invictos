@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Painel Administrativo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f4f6f9;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      height: 60px;
+      background: #1e1e2f;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    /* ===== LAYOUT ===== */
+    .layout {
+      display: flex;
+      height: calc(100vh - 60px);
+    }
+
+    /* ===== MENU LATERAL ===== */
+    .sidebar {
+      width: 220px;
+      background: #252540;
+      color: white;
+      padding-top: 20px;
+    }
+
+    .sidebar a {
+      display: block;
+      padding: 15px 20px;
+      color: #cfd2ff;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .sidebar a:hover {
+      background: #34345c;
+      color: white;
+    }
+
+    .sidebar a.ativo {
+      background: #3f3fff;
+      color: white;
+    }
+
+    /* ===== CONTEÚDO ===== */
+    .conteudo {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    .conteudo h1 {
+      margin-top: 0;
+      color: #333;
+    }
+
+    .placeholder {
+      margin-top: 20px;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      border: 1px dashed #ccc;
+      color: #666;
+    }
+
+    /* ===== DASHBOARD ===== */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.kpi-card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.kpi-title {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.kpi-value {
+  font-size: 32px;
+  font-weight: bold;
+  color: #3f3fff;
+}
+
+.kpi-sub {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #999;
+}
+
+.section {
+  margin-top: 30px;
+}
+
+.section h2 {
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.info-box {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.path-header {
+  cursor: pointer;
+  user-select: none;
+}       
+
+.path-header:hover {
+  color: #3f3fff;
+}
+
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header>
+    🛠️ Painel Administrativo
+  </header>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+
+    <!-- MENU -->
+<aside class="sidebar">
+  <a href="#" data-view="dashboard" class="ativo">Dashboard</a>
+  <a href="#" data-view="usuarios">Usuários</a>
+  <a href="#" data-view="palpites">Palpites</a>
+  <a href="#" data-view="paths">Paths</a>
+  <a href="#" data-view="config">Configurações</a>
+</aside>
+
+    <!-- CONTEÚDO -->
+   <main class="conteudo">
+<div id="adminChallengeBar" style="
+  background: #ffffff;
+  padding: 15px 20px;
+  border-radius: 10px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  max-width: 600px;
+">
+  <label><strong>Desafio ativo</strong></label>
+  <select id="adminSelectDesafio" style="width:100%; margin-top:8px;"></select>
+</div>
+
+
+  <div id="viewContainer"></div>
+</main>
+
+  
+<script>
+  const viewContainer = document.getElementById("viewContainer");
+  const menuLinks = document.querySelectorAll(".sidebar a");
+  let adminChallengeId = null;
+
+  function setActive(link) {
+    menuLinks.forEach(a => a.classList.remove("ativo"));
+    link.classList.add("ativo");
+  }
+
+  async function validarAdmin() {
+  const token = localStorage.getItem("authToken");
+  if (!token) {
+    alert("Faça login como admin");
+    window.location.href = "/login.html";
+    return false;
+  }
+
+  const res = await fetch("/admin/teste", {
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
+  });
+
+  if (!res.ok) {
+    alert("Acesso negado. Você não é admin.");
+    window.location.href = "/";
+    return false;
+  }
+
+  return true;
+}
+
+
+  function renderDashboard() {
+  viewContainer.innerHTML = `
+    <h1>Dashboard</h1>
+
+    <!-- KPIs -->
+    <div class="dashboard-grid">
+
+      <div class="kpi-card">
+        <div class="kpi-title">Usuários cadastrados</div>
+        <div class="kpi-value" id="kpiUsuariosTotal">—</div>
+        <div class="kpi-sub">Total no sistema</div>
+      </div>
+
+      <div class="kpi-card">
+  <div class="kpi-title">Jogadores que iniciaram</div>
+  <div class="kpi-value" id="kpiUsuariosIniciaram">—</div>
+  <div class="kpi-sub">Palpitaram na rodada inicial</div>
+</div>
+
+      <div class="kpi-card">
+        <div class="kpi-title">Usuários ativos</div>
+        <div class="kpi-value" id="kpiUsuariosAtivos">—</div>
+        <div class="kpi-sub">Ainda vivos no jogo</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-title">Eliminados</div>
+        <div class="kpi-value" id="kpiUsuariosEliminados">—</div>
+        <div class="kpi-sub">Já fora da competição</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-title">Palpites feitos</div>
+        <div class="kpi-value" id="kpiPalpitesTotal">—</div>
+        <div class="kpi-sub">Todos os registros feitos</div>
+      </div>
+
+    </div>
+
+    <!-- INSIGHTS DO JOGO -->
+    <div class="section">
+      <h2>📊 Insights do Jogo</h2>
+
+      <div class="info-box">
+        <p><strong>Times mais escolhidos:</strong></p>
+        <ul id="insightTimes"></ul>
+
+        <p><strong>Paths idênticos:</strong></p>
+        <ul id="insightPaths"></ul>
+
+        <p><strong>Risco sistêmico:</strong>
+          <span id="insightRisco">—</span>
+        </p>
+      </div>
+    </div>
+  `;
+
+  carregarDesafiosParaAdmin(true)
+  
+setTimeout(calcularRiscoSistemico, 500);
+
+}
+
+
+function renderUsuarios() {
+  viewContainer.innerHTML = `
+    <h1>Usuários</h1>
+
+    <div id="usuariosContainer">
+      <p>Carregando usuários...</p>
+    </div>
+  `;
+
+  carregarUsuarios();
+}
+
+async function carregarDesafiosParaAdmin(carregarDados = false) {
+  const token = localStorage.getItem("authToken");
+
+  const res = await fetch("/admin/challenges", {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+
+  const desafios = await res.json();
+
+  const select = document.getElementById("adminSelectDesafio");
+  select.innerHTML = "";
+
+  desafios.forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d._id;
+    opt.textContent = `${d.nome} (${d.tipo})`;
+    select.appendChild(opt);
+  });
+
+  // 🔑 DEFINE O DESAFIO ANTES DE QUALQUER REQUEST
+  if (!adminChallengeId && desafios[0]) {
+    adminChallengeId = desafios[0]._id;
+  }
+
+  select.value = adminChallengeId;
+
+  // 🔥 AGORA SIM PODE BUSCAR DADOS
+  if (carregarDados) {
+    carregarDashboard();
+    carregarTimesMaisEscolhidos();
+    carregarPathsIdenticos();
+  }
+
+  select.onchange = () => {
+  adminChallengeId = select.value;
+
+  const ativo = document.querySelector(".sidebar a.ativo");
+  if (!ativo) return;
+
+  // 🔥 força reload REAL da view atual
+  renderView(ativo.dataset.view);
+};
+}
+
+function atualizarViewAtual() {
+  const ativo = document.querySelector(".sidebar a.ativo");
+  if (!ativo) return;
+
+  renderView(ativo.dataset.view);
+}
+
+function getAdminHeaders() {
+  const token = localStorage.getItem("authToken");
+
+  const headers = {
+    Authorization: `Bearer ${token}`
+  };
+
+  if (adminChallengeId) {
+    headers["X-CHALLENGE-ID"] = adminChallengeId;
+  }
+
+  return headers;
+}
+
+function renderPalpites() {
+  viewContainer.innerHTML = `
+    <h1>Palpites</h1>
+
+    <!-- FILTROS -->
+    <div class="kpi-card" style="margin-bottom:20px;">
+      <strong>Filtros</strong>
+
+      <div style="margin-top:10px; display:flex; gap:15px; align-items:center;">
+        <label>
+          Rodada:
+          <input type="number" id="filtroRodadaPalpite" min="1" style="width:80px;">
+        </label>
+
+        <button onclick="aplicarFiltroRodadaPalpites()">Aplicar</button>
+        <button onclick="limparFiltroPalpites()">Limpar</button>
+      </div>
+    </div>
+
+    <!-- RESUMO POR TIME -->
+    <div id="resumoTimesPalpites"></div>
+
+    <div id="heatmapEliminacoes" style="margin-bottom:20px;"></div>
+
+    <div id="palpitesContainer">
+      <p>Carregando palpites...</p>
+    </div>
+  `;
+
+  carregarPalpites();
+}
+
+
+  function renderPaths() {
+  viewContainer.innerHTML = `
+    <h1>Paths dos Jogadores</h1>
+
+    <div id="pathsContainer">
+      <p>Carregando paths...</p>
+    </div>
+  `;
+
+  carregarPaths();
+}
+
+
+function renderConfig() {
+  viewContainer.innerHTML = `
+    <h1>⚙️ Configurações do Jogo</h1>
+
+    <div class="kpi-card" style="max-width:600px;">
+
+      <label><strong>Desafio</strong></label>
+      <select id="selectDesafio" style="width:100%; margin-bottom:15px;"></select>
+
+      <label><strong>Rodada atual</strong></label>
+      <input type="number" id="rodadaAtual" style="width:100%; margin-bottom:15px;">
+
+      <label><strong>Status</strong></label>
+      <select id="statusDesafio" style="width:100%; margin-bottom:15px;">
+<option value="iniciando">🟢 Iniciando (1ª rodada)</option>
+<option value="ativo">⚽ Ativo (palpites abertos)</option>
+<option value="aguardando">⏳ Aguardando (rodada em andamento)</option>
+<option value="finalizado">🏁 Finalizado</option>
+      </select>
+
+      <label>
+        <input type="checkbox" id="visivelDesafio">
+        Desafio visível para usuários
+      </label>
+
+      <br><br>
+
+      <button onclick="salvarConfigDesafio()">💾 Salvar configurações</button>
+
+    </div>
+  `;
+
+  carregarDesafiosAdmin();
+}
+
+function renderView(view) {
+  const selectorBar = document.getElementById("adminChallengeBar");
+
+  // ❌ Esconde o seletor APENAS em Configurações
+  if (view === "config") {
+    selectorBar.style.display = "none";
+  } else {
+    selectorBar.style.display = "block";
+  }
+
+  if (view === "dashboard") renderDashboard();
+  if (view === "usuarios") renderUsuarios();
+  if (view === "palpites") renderPalpites();
+  if (view === "paths") renderPaths();
+  if (view === "config") renderConfig();
+}
+
+
+
+  menuLinks.forEach(link => {
+    link.addEventListener("click", e => {
+      e.preventDefault();
+      const view = link.dataset.view;
+      setActive(link);
+      renderView(view);
+    });
+  });
+
+  async function carregarDashboard() {
+  try {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      alert("Token não encontrado. Faça login novamente.");
+      return;
+    }
+
+    const res = await fetch("/admin/dashboard", {
+      headers: getAdminHeaders()
+
+    });
+
+if (!res.ok) {
+  const txt = await res.text();
+  console.error("Erro backend:", res.status, txt);
+  throw new Error(`Erro ${res.status}`);
+}
+
+    const data = await res.json();
+    console.log("DADOS DO DASHBOARD:", data);
+
+
+document.getElementById("kpiUsuariosTotal").textContent =
+  data.usuarios?.total ?? 0;
+
+document.getElementById("kpiUsuariosAtivos").textContent =
+  data.usuarios?.vivos ?? 0;
+
+document.getElementById("kpiUsuariosEliminados").textContent =
+  data.usuarios?.eliminados ?? 0;
+
+document.getElementById("kpiPalpitesTotal").textContent =
+  data.palpites?.total ?? 0;
+
+  document.getElementById("kpiUsuariosIniciaram").textContent =
+  data.usuarios?.iniciaram ?? 0;
+
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao carregar dados do dashboard");
+  }
+}
+
+async function carregarPaths() {
+  try {
+    const token = localStorage.getItem("authToken");
+
+    const res = await fetch("/admin/paths", {
+      headers: getAdminHeaders()
+    });
+
+    if (!res.ok) {
+      throw new Error("Erro ao buscar paths");
+    }
+
+    const data = await res.json();
+    renderListaPaths(data);
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("pathsContainer").innerHTML =
+      "<p>Erro ao carregar paths.</p>";
+  }
+}
+
+async function carregarConfiguracoes() {
+  try {
+    const token = localStorage.getItem("authToken");
+
+    const res = await fetch("/api/rodada-atual", {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    if (!res.ok) throw new Error("Erro ao buscar configurações");
+
+    const data = await res.json();
+
+    // Por enquanto só temos rodadaAtual no backend
+    document.getElementById("configRodadaAtual").value =
+      data.rodadaAtual ?? 1;
+
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao carregar configurações");
+  }
+}
+
+async function salvarConfiguracoes() {
+  try {
+    const token = localStorage.getItem("authToken");
+
+    const novaRodada = Number(
+      document.getElementById("configRodadaAtual").value
+    );
+
+    if (!novaRodada || novaRodada < 1) {
+      alert("Rodada inválida");
+      return;
+    }
+
+    const res = await fetch("/api/rodada-atual", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ novaRodada })
+    });
+
+    if (!res.ok) throw new Error("Erro ao salvar");
+
+    alert("✅ Rodada atual atualizada com sucesso!");
+
+  } catch (err) {
+    console.error(err);
+    alert("Erro ao salvar configurações");
+  }
+}
+
+
+function renderListaPaths(paths) {
+  const container = document.getElementById("viewContainer");
+
+  // guarda os dados originais para filtros
+  window.pathsOriginais = paths;
+
+  container.innerHTML = `
+    <h1>Paths dos Usuários</h1>
+
+    <!-- FILTROS -->
+    <div class="kpi-card" style="margin-bottom: 20px;">
+      <strong>Filtros</strong>
+
+      <div style="margin-top: 10px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center;">
+
+        <label>
+          Risco:
+          <select id="filtroRisco">
+            <option value="">Todos</option>
+            <option value="alto">Alto</option>
+            <option value="medio">Médio</option>
+            <option value="baixo">Baixo</option>
+          </select>
+        </label>
+
+        <label>
+          Status:
+          <select id="filtroStatus">
+            <option value="">Todos</option>
+            <option value="ativo">Ativos</option>
+            <option value="eliminado">Eliminados</option>
+          </select>
+        </label>
+
+        <label>
+          Mín. usuários:
+          <input type="number" id="filtroMinUsuarios" min="1" style="width: 70px;">
+        </label>
+
+        <label>
+  Rodada:
+  <input type="number" id="filtroRodada" min="1" style="width: 70px;">
+</label>
+
+
+        <button onclick="aplicarFiltrosPaths()">Aplicar</button>
+        <button onclick="limparFiltrosPaths()">Limpar</button>
+
+      </div>
+    </div>
+
+    <!-- LISTA DE PATHS -->
+    <div id="pathsLista"></div>
+  `;
+
+  renderizarPaths(paths);
+}
+
+function renderizarPaths(paths) {
+  const lista = document.getElementById("pathsLista");
+
+  if (!paths.length) {
+    lista.innerHTML = "<p>Nenhum path encontrado.</p>";
+    return;
+  }
+
+  lista.innerHTML = paths.map(p => {
+    let risco = "baixo";
+    if (p.quantidade >= 20) risco = "alto";
+    else if (p.quantidade >= 10) risco = "medio";
+
+    return `
+      <div class="kpi-card path-card" style="margin-bottom: 20px;">
+
+        <div class="path-header" onclick="togglePath(this)">
+          ▶ <strong>${p.quantidade} usuários</strong> — Risco: ${risco}
+        </div>
+
+        <div style="margin: 10px 0;">
+          ${p.path.map(x => x.time).join(" → ")}
+        </div>
+
+        <div class="path-body" style="display:none;">
+          <strong>Usuários:</strong>
+          <ul>
+            ${p.usuarios.map(u => `
+              <li>
+                ${u.username}
+                ${u.status === "eliminado"
+                  ? `(❌ eliminado na rodada ${u.rodadaEliminacao})`
+                  : `(✅ ativo)`
+                }
+              </li>
+            `).join("")}
+          </ul>
+        </div>
+
+      </div>
+    `;
+  }).join("");
+}
+
+
+function aplicarFiltrosPaths() {
+  const risco = document.getElementById("filtroRisco").value;
+  const status = document.getElementById("filtroStatus").value;
+  const minUsuarios = Number(document.getElementById("filtroMinUsuarios").value);
+  const rodada = Number(document.getElementById("filtroRodada").value);
+
+
+  let filtrados = [...window.pathsOriginais];
+
+  if (risco) {
+    filtrados = filtrados.filter(p => {
+      if (risco === "alto") return p.quantidade >= 20;
+      if (risco === "medio") return p.quantidade >= 10 && p.quantidade < 20;
+      if (risco === "baixo") return p.quantidade < 10;
+    });
+  }
+
+  if (status) {
+    filtrados = filtrados.filter(p =>
+      p.usuarios.some(u => u.status === status)
+    );
+  }
+
+  if (minUsuarios) {
+    filtrados = filtrados.filter(p => p.quantidade >= minUsuarios);
+  }
+
+  if (rodada) {
+  filtrados = filtrados.filter(p =>
+    p.path.some(x => x.rodada === rodada)
+  );
+}
+
+  renderizarPaths(filtrados);
+}
+
+function limparFiltrosPaths() {
+  document.getElementById("filtroRisco").value = "";
+  document.getElementById("filtroStatus").value = "";
+  document.getElementById("filtroMinUsuarios").value = "";
+  document.getElementById("filtroRodada").value = "";
+
+
+  renderizarPaths(window.pathsOriginais);
+}
+
+
+async function carregarTimesMaisEscolhidos() {
+  try {
+    const token = localStorage.getItem("authToken");
+
+    const res = await fetch("/admin/times-mais-palpites", {
+      headers: getAdminHeaders()
+    });
+
+    if (!res.ok) throw new Error("Erro ao buscar times");
+
+    const dados = await res.json();
+
+    const ul = document.getElementById("insightTimes");
+    ul.innerHTML = "";
+
+    dados.slice(0, 5).forEach(item => {
+      const li = document.createElement("li");
+      li.textContent = `${item._id} — ${item.total} palpites`;
+      ul.appendChild(li);
+    });
+
+    if (dados.length === 0) {
+      ul.innerHTML = "<li>Nenhum palpite registrado</li>";
+    }
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function carregarPathsIdenticos() {
+  try {
+    const token = localStorage.getItem("authToken");
+
+    const res = await fetch("/admin/paths", {
+      headers: getAdminHeaders()
+    });
+
+    if (!res.ok) throw new Error("Erro ao buscar paths");
+
+    const dados = await res.json();
+
+    const map = {};
+    dados.forEach(p => {
+      const chave = p.path.map(x => `${x.rodada}-${x.time}`).join("|");
+      map[chave] = (map[chave] || 0) + 1;
+    });
+
+    const ul = document.getElementById("insightPaths");
+    ul.innerHTML = "";
+
+    Object.entries(map)
+      .filter(([_, count]) => count > 1)
+      .forEach(([path, count]) => {
+        const li = document.createElement("li");
+        li.textContent = `${count} usuários com path idêntico`;
+        ul.appendChild(li);
+      });
+
+    if (ul.innerHTML === "") {
+      ul.innerHTML = "<li>Nenhum path duplicado</li>";
+    }
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function calcularRiscoSistemico() {
+  const itens = document.querySelectorAll("#insightPaths li");
+
+  let risco = "BAIXO 🟢";
+
+  itens.forEach(li => {
+    if (li.textContent.includes("3 usuários")) risco = "ALTO 🔴";
+    else if (li.textContent.includes("2 usuários")) risco = "MÉDIO 🟠";
+  });
+
+  document.getElementById("insightRisco").textContent = risco;
+}
+
+function togglePath(header) {
+  const card = header.closest(".path-card");
+  const body = card.querySelector(".path-body");
+
+  const aberto = body.style.display === "block";
+
+  body.style.display = aberto ? "none" : "block";
+  header.innerHTML = header.innerHTML.replace(
+    aberto ? "▼" : "▶",
+    aberto ? "▶" : "▼"
+  );
+}
+
+async function carregarUsuarios() {
+  try {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      alert("Token não encontrado. Faça login novamente.");
+      return;
+    }
+
+    const res = await fetch("/admin/usuarios", {
+      headers: getAdminHeaders()
+
+    });
+
+    if (!res.ok) {
+      throw new Error("Erro ao carregar usuários");
+    }
+
+    const usuarios = await res.json();
+
+    // guarda para filtros
+    window.usuariosOriginais = usuarios;
+
+    const container = document.getElementById("usuariosContainer");
+
+    // 1️⃣ monta filtros + container da tabela
+    container.innerHTML = `
+      <!-- FILTROS -->
+      <div class="kpi-card" style="margin-bottom:20px;">
+        <strong>Filtros</strong>
+
+        <div style="margin-top:10px; display:flex; gap:15px; flex-wrap:wrap; align-items:center;">
+
+          <input
+            type="text"
+            id="filtroBusca"
+            placeholder="Buscar nome, usuário ou email"
+          >
+
+          <label>
+            Status:
+            <select id="filtroStatus">
+              <option value="">Todos</option>
+              <option value="ativo">Ativo</option>
+              <option value="eliminado">Eliminado</option>
+            </select>
+          </label>
+
+          <label>
+            Perfil:
+            <select id="filtroRole">
+              <option value="">Todos</option>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+
+          <label>
+            Time:
+            <input type="text" id="filtroTime" style="width:120px;">
+          </label>
+
+          <label>
+            Rodada eliminação:
+            <input type="number" id="filtroRodada" style="width:80px;">
+          </label>
+
+          <button onclick="aplicarFiltrosUsuarios()">Aplicar</button>
+          <button onclick="limparFiltrosUsuarios()">Limpar</button>
+        </div>
+      </div>
+
+      <!-- TABELA -->
+      <div id="usuariosTabela"></div>
+    `;
+
+    // 2️⃣ renderiza tabela
+    renderizarTabelaUsuarios(usuarios);
+  
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("usuariosContainer").innerHTML =
+      "<p>Erro ao carregar usuários.</p>";
+  }
+}
+
+
+function renderizarTabelaUsuarios(usuarios) {
+  const tabela = document.getElementById("usuariosTabela");
+
+  if (!usuarios.length) {
+    tabela.innerHTML = "<p>Nenhum usuário encontrado.</p>";
+    return;
+  }
+
+  tabela.innerHTML = `
+    <table border="1" cellpadding="8" cellspacing="0" width="100%">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nome</th>
+          <th>Usuário</th>
+          <th>Email</th>
+          <th>Data Nasc.</th>
+          <th>Time</th>
+          <th>Status</th>
+          <th>Rodada Eliminação</th>
+          <th>Palpites</th>
+          <th>Perfil</th>
+          <th>Criado em</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${usuarios.map((u, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${u.nome} ${u.sobrenome}</td>
+            <td>${u.username}</td>
+            <td>${u.email}</td>
+            <td>${u.dataNascimento ? new Date(u.dataNascimento).toLocaleDateString("pt-BR") : "-"}</td>
+            <td>${u.timeCoracao || "-"}</td>
+            <td>${u.status}</td>
+            <td>${u.rodadaEliminacao ?? "-"}</td>
+            <td>${u.totalPalpites}</td>
+            <td>${u.role}</td>
+            <td>
+  ${new Date(u.createdAt).toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "medium"
+  })}
+</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function aplicarFiltrosUsuarios() {
+  const busca = document.getElementById("filtroBusca").value.toLowerCase();
+  const status = document.getElementById("filtroStatus").value;
+  const role = document.getElementById("filtroRole").value;
+  const time = document.getElementById("filtroTime").value.toLowerCase();
+  const rodada = Number(document.getElementById("filtroRodada").value);
+
+  let filtrados = [...window.usuariosOriginais];
+
+  if (busca) {
+    filtrados = filtrados.filter(u =>
+      u.nome.toLowerCase().includes(busca) ||
+      u.sobrenome.toLowerCase().includes(busca) ||
+      u.username.toLowerCase().includes(busca) ||
+      u.email.toLowerCase().includes(busca)
+    );
+  }
+
+  if (status) {
+    filtrados = filtrados.filter(u => u.status === status);
+  }
+
+  if (role) {
+    filtrados = filtrados.filter(u => u.role === role);
+  }
+
+  if (time) {
+    filtrados = filtrados.filter(u =>
+      (u.timeCoracao || "").toLowerCase().includes(time)
+    );
+  }
+
+  if (rodada) {
+    filtrados = filtrados.filter(u => u.rodadaEliminacao === rodada);
+  }
+
+  renderizarTabelaUsuarios(filtrados);
+}
+
+function limparFiltrosUsuarios() {
+  document.getElementById("filtroBusca").value = "";
+  document.getElementById("filtroStatus").value = "";
+  document.getElementById("filtroRole").value = "";
+  document.getElementById("filtroTime").value = "";
+  document.getElementById("filtroRodada").value = "";
+
+  renderizarTabelaUsuarios(window.usuariosOriginais);
+}
+
+async function carregarPalpites() {
+  try {
+    const token = localStorage.getItem("authToken");
+
+    if (!token) {
+      alert("Token não encontrado.");
+      return;
+    }
+
+    const res = await fetch("/admin/palpites", {
+      headers: getAdminHeaders()
+    });
+
+    if (!res.ok) {
+      throw new Error("Erro ao carregar palpites");
+    }
+
+    const palpites = await res.json();
+
+    // guarda para filtros futuros
+    window.palpitesOriginais = palpites;
+
+    renderizarTabelaPalpites(palpites);
+    renderResumoPorTime(palpites);
+      renderHeatmapEliminacoes();
+      renderRankingTimesMortais(palpites);
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById("palpitesContainer").innerHTML =
+      "<p>Erro ao carregar palpites.</p>";
+  }
+}
+
+function renderizarTabelaPalpites(palpites) {
+  const container = document.getElementById("palpitesContainer");
+
+  if (!palpites.length) {
+    container.innerHTML = "<p>Nenhum palpite encontrado.</p>";
+    return;
+  }
+
+  container.innerHTML = `
+    <table border="1" cellpadding="8" cellspacing="0" width="100%">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Usuário</th>
+          <th>Rodada</th>
+          <th>Time</th>
+          <th>Status</th>
+          <th>Data</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${palpites.map((p, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${p.username}</td>
+            <td>${p.rodada}</td>
+            <td>${p.time}</td>
+            <td>${p.status}</td>
+            <td>
+  ${new Date(p.createdAt).toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "medium"
+  })}
+</td>
+
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function aplicarFiltroRodadaPalpites() {
+  const rodada = Number(
+    document.getElementById("filtroRodadaPalpite").value
+  );
+
+  let palpitesFiltrados = [...window.palpitesOriginais];
+
+  if (rodada) {
+    palpitesFiltrados = palpitesFiltrados.filter(
+      p => p.rodada === rodada
+    );
+  }
+
+  // 🔄 atualiza tudo com a MESMA base
+  renderizarTabelaPalpites(palpitesFiltrados);
+  renderResumoPorTime(palpitesFiltrados);
+
+  // heatmap e ranking dependem dos usuários,
+  // mas precisam respeitar a rodada selecionada
+  window.palpitesFiltradosRodada = palpitesFiltrados;
+
+  renderHeatmapEliminacoes();
+  renderRankingTimesMortais(palpitesFiltrados);
+}
+
+function limparFiltroPalpites() {
+  document.getElementById("filtroRodadaPalpite").value = "";
+
+  delete window.palpitesFiltradosRodada;
+
+  renderizarTabelaPalpites(window.palpitesOriginais);
+  renderResumoPorTime(window.palpitesOriginais);
+  renderHeatmapEliminacoes();
+  renderRankingTimesMortais(window.palpitesOriginais);
+}
+
+
+
+function renderResumoPorTime(palpites) {
+  const container = document.getElementById("resumoTimesPalpites");
+
+  if (!palpites.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const contador = {};
+
+  palpites.forEach(p => {
+    contador[p.time] = (contador[p.time] || 0) + 1;
+  });
+
+  const ranking = Object.entries(contador)
+    .sort((a, b) => b[1] - a[1]);
+
+  container.innerHTML = `
+    <div class="kpi-card" style="margin-bottom:20px;">
+      <strong>📊 Palpites por time</strong>
+
+      <table width="100%" cellpadding="6" cellspacing="0" style="margin-top:10px;">
+        <thead>
+          <tr>
+            <th align="left">Time</th>
+            <th align="right">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ranking.map(([time, total]) => `
+            <tr>
+              <td>${time}</td>
+              <td align="right"><strong>${total}</strong></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderHeatmapEliminacoes() {
+  const container = document.getElementById("heatmapEliminacoes");
+
+  // segurança: container pode não existir se a view não for Palpites
+  if (!container) return;
+
+  // se não houver usuários carregados, não faz nada
+  if (!window.usuariosOriginais || !window.usuariosOriginais.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  /**
+   * 🔑 DEFINIÇÃO DA BASE
+   * - Se existir filtro de rodada aplicado → usa ele
+   * - Caso contrário → usa todos os palpites
+   */
+  const palpitesBase =
+    window.palpitesFiltradosRodada || window.palpitesOriginais;
+
+  if (!palpitesBase.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  /**
+   * 📌 Descobre quais rodadas estão "ativas"
+   * Ex: se filtrou rodada 3, só a rodada 3 entra
+   */
+  const rodadasValidas = new Set(
+    palpitesBase.map(p => p.rodada)
+  );
+
+  /**
+   * 🔥 Conta eliminações por rodada
+   */
+  const eliminacoesPorRodada = {};
+
+  window.usuariosOriginais.forEach(u => {
+    if (
+      u.status === "eliminado" &&
+      u.rodadaEliminacao &&
+      rodadasValidas.has(u.rodadaEliminacao)
+    ) {
+      eliminacoesPorRodada[u.rodadaEliminacao] =
+        (eliminacoesPorRodada[u.rodadaEliminacao] || 0) + 1;
+    }
+  });
+
+  const rodadas = Object.keys(eliminacoesPorRodada)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  // se não houve eliminações nas rodadas filtradas, não exibe
+  if (!rodadas.length) {
+    container.innerHTML = "";
+    return;
+  }
+
+  const max = Math.max(...Object.values(eliminacoesPorRodada));
+
+  /**
+   * 🎨 RENDERIZAÇÃO VISUAL
+   */
+  container.innerHTML = `
+    <div class="kpi-card" style="margin-bottom:20px;">
+      <strong>🔥 Heatmap de Eliminação</strong>
+
+      <div style="
+        display:grid;
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap:10px;
+        margin-top:15px;
+      ">
+        ${rodadas.map(r => {
+          const total = eliminacoesPorRodada[r];
+          const intensidade = total / max;
+
+          return `
+            <div
+              title="Rodada ${r} — ${total} eliminações"
+              style="
+                padding:10px;
+                text-align:center;
+                border-radius:6px;
+                color:white;
+                font-weight:bold;
+                background: rgba(220, 53, 69, ${0.2 + intensidade * 0.8});
+              "
+            >
+              R${r}<br>${total}
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
+
+function calcularTimesMortais(palpites, usuarios) {
+  const mapaUsuarios = {};
+
+  usuarios.forEach(u => {
+    mapaUsuarios[u.username] = u;
+  });
+
+  const contador = {};
+
+  palpites.forEach(p => {
+    const user = mapaUsuarios[p.username];
+    if (!user) return;
+
+    if (
+      user.status === "eliminado" &&
+      user.rodadaEliminacao === p.rodada
+    ) {
+      contador[p.time] = (contador[p.time] || 0) + 1;
+    }
+  });
+
+  return Object.entries(contador)
+    .sort((a, b) => b[1] - a[1])
+    .map(([time, total]) => ({ time, total }));
+}
+
+function calcularTimesMortais(palpites, usuarios) {
+  const mortosPorTime = {};
+
+  usuarios.forEach(u => {
+    if (u.status === "eliminado" && u.rodadaEliminacao) {
+      const palpite = palpites.find(p =>
+        p.username === u.username &&
+        p.rodada === u.rodadaEliminacao
+      );
+
+      if (palpite) {
+        mortosPorTime[palpite.time] =
+          (mortosPorTime[palpite.time] || 0) + 1;
+      }
+    }
+  });
+
+  return Object.entries(mortosPorTime)
+    .map(([time, total]) => ({ time, total }))
+    .sort((a, b) => b.total - a.total);
+}
+
+function renderRankingTimesMortais(palpites) {
+  const container = document.getElementById("heatmapEliminacoes");
+
+  if (!container || !window.usuariosOriginais) return;
+
+  const ranking = calcularTimesMortais(
+    palpites,
+    window.usuariosOriginais
+  );
+
+  if (!ranking.length) return;
+
+  container.innerHTML += `
+    <div class="kpi-card" style="margin-top:20px;">
+      <strong>☠️ Times mais mortais</strong>
+
+      <table width="100%" cellpadding="6" cellspacing="0" style="margin-top:10px;">
+        <thead>
+          <tr>
+            <th align="left">Time</th>
+            <th align="right">Eliminações</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ranking.map(r => `
+            <tr>
+              <td>${r.time}</td>
+              <td align="right"><strong>${r.total}</strong></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+async function carregarDesafiosAdmin() {
+  const token = localStorage.getItem("authToken");
+
+const res = await fetch("/admin/challenges", {
+  headers: {
+    Authorization: `Bearer ${token}`
+  }
+});
+
+
+  const desafios = await res.json();
+
+  window.desafiosAdmin = desafios;
+
+  const select = document.getElementById("selectDesafio");
+  select.innerHTML = "";
+
+  desafios.forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d._id;
+    opt.textContent = `${d.nome} (${d.tipo})`;
+    select.appendChild(opt);
+  });
+
+  // carrega o primeiro automaticamente
+  preencherFormularioDesafio(desafios[0]);
+
+  select.onchange = () => {
+    const desafio = desafios.find(d => d._id === select.value);
+    preencherFormularioDesafio(desafio);
+  };
+}
+
+function preencherFormularioDesafio(desafio) {
+  document.getElementById("rodadaAtual").value = desafio.rodadaAtual;
+  document.getElementById("statusDesafio").value = desafio.status;
+  document.getElementById("visivelDesafio").checked = desafio.visivel;
+
+  window.desafioSelecionado = desafio;
+}
+
+async function salvarConfigDesafio() {
+  const token = localStorage.getItem("authToken");
+
+  const body = {
+    rodadaAtual: Number(document.getElementById("rodadaAtual").value),
+    status: document.getElementById("statusDesafio").value,
+    visivel: document.getElementById("visivelDesafio").checked
+  };
+
+  const res = await fetch(
+    `/admin/challenges/${window.desafioSelecionado._id}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
+    }
+  );
+
+  if (!res.ok) {
+    alert("Erro ao salvar configurações");
+    return;
+  }
+
+  const atualizado = await res.json();
+  alert("✅ Configurações salvas com sucesso!");
+
+  // atualiza memória local
+  preencherFormularioDesafio(atualizado);
+}
+
+
+  (async () => {
+  const ok = await validarAdmin();
+  if (ok) {
+    renderDashboard();
+  }
+})();
+
+</script>
+
+</body>
+</html>
