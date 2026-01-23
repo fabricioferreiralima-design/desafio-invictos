@@ -1539,7 +1539,7 @@ app.get("/api/index/estatisticas", auth, async (req, res) => {
 });
 
 // 🔁 fallback para frontend (Render / produção)
-app.get("*", (req, res) => {
+app.get("/*", (req, res) => {
   if (req.path.startsWith("/api") || req.path.startsWith("/admin")) {
     return res.status(404).json({ error: "Rota não encontrada" });
   }
