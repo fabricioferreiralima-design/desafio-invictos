@@ -23,7 +23,7 @@ const registerSchema = require("./validators/registerValidator");
   const jwt = require("jsonwebtoken");
   const auth = require("./middlewares/auth");
   const crypto = require("crypto");
-  const transporter = require("./utils/email");
+  const { enviarEmailConfirmacao } = require("./utils/email");
   const authAdmin = require("./middlewares/authAdmin");
   const Challenge = require("./models/Challenge");
   const path = require("path");
@@ -808,38 +808,21 @@ app.get("/api/linha-do-tempo", auth, async (req, res) => {
   emailTokenExpira
     });
 
-    res.status(201).json({
+    try {
+  await enviarEmailConfirmacao(
+    user.email,
+    user.nome,
+    emailToken
+  );
+} catch (err) {
+  console.error("⚠️ Email não enviado:", err.message);
+}
+
+res.status(201).json({
   ok: true,
   message: "Cadastro realizado com sucesso! Verifique seu e-mail."
 });
 
-
-    const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
-const linkVerificacao = `${BASE_URL}/api/verify-email?token=${emailToken}`;
-
-
-try {
-  await transporter.sendMail({
-    from: `"Campeonato" <${process.env.EMAIL_USER}>`,
-    to: user.email,
-    subject: "Confirme seu e-mail",
-    html: `
-      <h2>Bem-vindo ao Campeonato!</h2>
-      <p>Para ativar sua conta, confirme seu e-mail:</p>
-      <a href="${linkVerificacao}">Confirmar e-mail</a>
-    `
-  });
-} catch (err) {
-  console.error("❌ Erro ao enviar email:", err.message);
-  // NÃO quebra o servidor
-}
-
-
-
-    // 6️⃣ Resposta segura (NUNCA retornar senha ou CPF)
-    res.status(201).json({
-  message: "Cadastro realizado com sucesso! Verifique seu e-mail para ativar a conta."
-});
 
   } catch (err) {
     console.error("❌ Erro no cadastro:", err);
@@ -951,21 +934,6 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-app.get("/api/teste-email", async (req, res) => {
-  try {
-    await transporter.sendMail({
-      from: `"Teste" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
-      subject: "Teste de e-mail",
-      text: "Se você recebeu isso, o Nodemailer está funcionando!"
-    });
-
-    res.send("E-mail enviado com sucesso!");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Erro ao enviar e-mail");
-  }
-});
 
 app.get("/api/status-jogador", auth, async (req, res) => {
   const user = await User.findById(req.userId);
@@ -1004,15 +972,16 @@ app.post("/api/reenviar-verificacao", auth, async (req, res) => {
 const linkVerificacao = `${BASE_URL}/api/verify-email?token=${emailToken}`;
 
 
-    await transporter.sendMail({
-      from: `"Campeonato" <${process.env.EMAIL_USER}>`,
-      to: user.email,
-      subject: "Confirme seu e-mail",
-      html: `
-        <h2>Confirme seu e-mail</h2>
-        <p><a href="${linkVerificacao}">Confirmar e-mail</a></p>
-      `
-    });
+ try {
+  await enviarEmailConfirmacao(
+    user.email,
+    user.nome,
+    emailToken
+  );
+} catch (err) {
+  console.error("⚠️ Erro ao reenviar email:", err.message);
+}
+
 
     res.json({ ok: true });
 
