@@ -808,20 +808,27 @@ app.get("/api/linha-do-tempo", auth, async (req, res) => {
   emailTokenExpira
     });
 
+    res.status(201).json({
+  ok: true,
+  message: "Cadastro realizado com sucesso! Verifique seu e-mail."
+});
+
+
     const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 const linkVerificacao = `${BASE_URL}/api/verify-email?token=${emailToken}`;
 
 
-await transporter.sendMail({
+transporter.sendMail({
   from: `"Campeonato" <${process.env.EMAIL_USER}>`,
   to: user.email,
   subject: "Confirme seu e-mail",
   html: `
-    <h2>Bem-vindo ao Campeonato!</h2>
-    <p>Para ativar sua conta, confirme seu e-mail clicando no link abaixo:</p>
-    <p><a href="${linkVerificacao}">Confirmar e-mail</a></p>
-    <p>Se você não se cadastrou, ignore este e-mail.</p>
+    <h2>Bem-vindo!</h2>
+    <p>Confirme seu e-mail clicando abaixo:</p>
+    <a href="${linkVerificacao}">Confirmar e-mail</a>
   `
+}).catch(err => {
+  console.error("❌ Erro ao enviar e-mail:", err.message);
 });
 
 
