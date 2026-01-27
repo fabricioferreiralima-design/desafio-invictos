@@ -7,7 +7,7 @@ async function enviarEmailConfirmacao(email, nome, token) {
 
   try {
     await resend.emails.send({
-      from: "Desafio Invictos <onboarding@resend.dev>",
+      from: "Desafio Invictos <no-reply@desafioinvictos.com.br>",
       to: email,
       subject: "Confirme sua conta no Desafio Invictos",
       html: `
