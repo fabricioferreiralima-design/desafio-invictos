@@ -53,7 +53,13 @@
     <div id="step2" class="step hidden">
       <h2>Dados pessoais</h2>
      <input id="cpf" placeholder="CPF" maxlength="14">
-      <input id="dataNascimento" type="date">
+      <input
+  id="dataNascimento"
+  type="text"
+  placeholder="Data de nascimento (DD/MM/AAAA)"
+  maxlength="10"
+/>
+
 
       <select id="genero">
         <option value="">Gênero</option>
@@ -127,6 +133,19 @@ function updateSteps() {
 }
 
 
+function dataValida(data) {
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(data)) return false;
+
+  const [d, m, a] = data.split("/").map(Number);
+  const dt = new Date(a, m - 1, d);
+
+  return (
+    dt.getFullYear() === a &&
+    dt.getMonth() === m - 1 &&
+    dt.getDate() === d
+  );
+}
+
 function nextStep() {
   erro.textContent = "";
 
@@ -155,9 +174,15 @@ if (step === 1) {
 
 
   if (step === 2) {
-    const campos = [cpf, dataNascimento, genero];
-    if (!validarCampos(campos)) return;
+  const campos = [cpf, dataNascimento, genero];
+  if (!validarCampos(campos)) return;
+
+  if (!dataValida(dataNascimento.value)) {
+    dataNascimento.classList.add("input-error");
+    erro.textContent = "Data de nascimento inválida";
+    return;
   }
+}
 
   if (step < 3) {
     step++;
@@ -191,7 +216,7 @@ async function cadastrar() {
     email: email.value.trim(),
     senha: senha.value.trim(),
     cpf: cpf.value.replace(/\D/g, ""),
-    dataNascimento: dataNascimento.value,
+    dataNascimento: dataNascimento.value.split("/").reverse().join("-"),
     genero: genero.value,
     timeCoracao: timeCoracao.value
   };
@@ -326,6 +351,20 @@ toggleSenha.addEventListener("click", () => {
     senha.type = "password";
     toggleSenha.textContent = "👁️";
   }
+});
+
+const dataInput = document.getElementById("dataNascimento");
+
+dataInput.addEventListener("input", () => {
+  let v = dataInput.value.replace(/\D/g, "").slice(0, 8);
+
+  if (v.length >= 5) {
+    v = v.replace(/(\d{2})(\d{2})(\d+)/, "$1/$2/$3");
+  } else if (v.length >= 3) {
+    v = v.replace(/(\d{2})(\d+)/, "$1/$2");
+  }
+
+  dataInput.value = v;
 });
 
 
