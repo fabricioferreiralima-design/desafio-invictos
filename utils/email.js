@@ -3,7 +3,7 @@ const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function enviarEmailConfirmacao(email, nome, token) {
-  const link = `${process.env.APP_URL}/confirmar-email?token=${token}`;
+  const link = `${process.env.BASE_URL}/api/verify-email?token=${token}`;
 
   try {
     await resend.emails.send({
