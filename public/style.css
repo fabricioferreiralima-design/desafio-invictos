@@ -1888,3 +1888,27 @@ header {
   overflow-x: hidden;
 }
 
+@media (max-width: 900px) {
+
+  .sidebar {
+    position: sticky;
+    bottom: 0;
+    max-height: 25vh; /* 25% da tela */
+    overflow-y: auto;
+    z-index: 20;
+  }
+
+}
+@media (max-width: 900px) {
+  .jogos-container {
+    padding-bottom: 26vh;
+  }
+}
+@media (max-width: 900px) {
+  .sidebar {
+    backdrop-filter: blur(10px);
+    background: rgba(2,6,23,0.92);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+  }
+}
