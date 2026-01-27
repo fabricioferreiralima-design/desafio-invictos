@@ -833,43 +833,98 @@ res.status(201).json({
 });
 
 app.get("/api/verify-email", async (req, res) => {
-  try {
-    const { token } = req.query;
+  const { token } = req.query;
 
-    // 1️⃣ Verificar se o token foi enviado
-    if (!token) {
-      return res.status(400).send("❌ Token de verificação não informado.");
-    }
-
-    // 2️⃣ Buscar usuário pelo token e validar expiração
-    const user = await User.findOne({
-      emailToken: token,
-      emailTokenExpira: { $gt: Date.now() }
-    });
-
-    if (!user) {
-      return res.status(400).send("❌ Token inválido ou expirado.");
-    }
-
-    // 3️⃣ Confirmar e-mail
-    user.emailConfirmado = true;
-    user.emailToken = undefined;
-    user.emailTokenExpira = undefined;
-
-    await user.save();
-
-    // 4️⃣ Resposta visual simples
-    res.send(`
-      <h2 style="color: green;">✅ E-mail confirmado com sucesso!</h2>
-      <p>Sua conta foi ativada.</p>
-      <p>Agora você já pode voltar ao site e fazer login.</p>
-    `);
-
-  } catch (err) {
-    console.error("Erro na verificação de e-mail:", err);
-    res.status(500).send("❌ Erro interno ao confirmar e-mail.");
+  if (!token) {
+    return res.status(400).send("Token inválido");
   }
+
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Confirmar e-mail</title>
+      <meta charset="utf-8" />
+      <style>
+        body {
+          font-family: Arial;
+          background: #0f172a;
+          color: white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+        }
+        .box {
+          background: #020617;
+          padding: 40px;
+          border-radius: 12px;
+          text-align: center;
+          max-width: 400px;
+        }
+        button {
+          background: #22c55e;
+          border: none;
+          padding: 12px 20px;
+          font-size: 16px;
+          border-radius: 6px;
+          cursor: pointer;
+          color: white;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="box">
+        <h2>Confirmação de e-mail</h2>
+        <p>Clique no botão abaixo para ativar sua conta.</p>
+
+        <form method="POST" action="/api/verify-email">
+          <input type="hidden" name="token" value="${token}" />
+          <button type="submit">Confirmar e-mail</button>
+        </form>
+      </div>
+    </body>
+    </html>
+  `);
 });
+
+app.post(
+  "/api/verify-email",
+  express.urlencoded({ extended: true }),
+  async (req, res) => {
+    try {
+      const { token } = req.body;
+
+      if (!token) {
+        return res.status(400).send("Token não enviado");
+      }
+
+      const user = await User.findOne({
+        emailToken: token,
+        emailTokenExpira: { $gt: Date.now() }
+      });
+
+      if (!user) {
+        return res.status(400).send("Token inválido ou expirado");
+      }
+
+      user.emailConfirmado = true;
+      user.emailToken = undefined;
+      user.emailTokenExpira = undefined;
+      await user.save();
+
+      res.send(`
+        <h2 style="color:green">✅ E-mail confirmado com sucesso!</h2>
+        <p>Agora você pode voltar ao site e fazer login.</p>
+      `);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Erro interno ao confirmar e-mail");
+    }
+  }
+);
+
+
 
 async function resolverDesafioAdmin(req) {
   const challengeId = req.headers["x-challenge-id"];
