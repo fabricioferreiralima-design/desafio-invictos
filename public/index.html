@@ -208,8 +208,11 @@ let rodadaAtualIndex = null;
 
 container.innerHTML = dados.map(item => {
 
-  // 🔒 se estiver aguardando, tudo fica neutro
-  const aguardando = statusDesafioIndex === "aguardando";
+// 🔒 bloqueia APENAS a rodada atual quando está aguardando
+const aguardando =
+  statusDesafioIndex === "aguardando" &&
+  rodadaAtualGlobal !== null &&
+  item.rodada === rodadaAtualGlobal;
 
   let classe = "neutro";
   let statusTexto = "❓ Aguardando resultado";
@@ -466,8 +469,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const contexto = await carregarContextoDoJogo();
   if (!contexto) return;
 
-  carregarContextoIndex();
-  carregarLinhaDoTempo();
+await carregarContextoIndex();
+await carregarLinhaDoTempo(); 
 
   // 🔒 só busca estatísticas se pode mostrar resultado
   if (contexto.status === "ativo" || contexto.status === "finalizado") {
