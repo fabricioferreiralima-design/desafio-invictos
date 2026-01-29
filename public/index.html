@@ -206,41 +206,49 @@ let rodadaAtualIndex = null;
       return;
     }
 
-    container.innerHTML = dados.map(item => {
-      let classe = "neutro";
-      let statusTexto = "❓ Aguardando resultado";
+container.innerHTML = dados.map(item => {
 
-   if (rodadaAtualGlobal && item.rodada === rodadaAtualGlobal) {
-  classe += " atual";
-}
+  // 🔒 se estiver aguardando, tudo fica neutro
+  const aguardando = statusDesafioIndex === "aguardando";
 
-      if (item.status === "sobreviveu") {
-        classe = "sobreviveu";
-        statusTexto = "✅ Sobreviveu";
-      } else if (item.status === "eliminado") {
-        classe = "eliminado";
-        statusTexto = "❌ Eliminado";
-      }
+  let classe = "neutro";
+  let statusTexto = "❓ Aguardando resultado";
+  let placarTexto = "— x —";
 
-      return `
-       <div class="timeline-row ${classe}">
-  <div class="timeline-dot"></div>
+  // só mostra resultado quando NÃO está aguardando
+  if (!aguardando) {
+    placarTexto = item.placar;
 
-  <div class="timeline-item">
-    <div class="rodada">Rodada ${item.rodada}</div>
-    <div class="escolha">Time escolhido: <strong>${item.time}</strong></div>
-   <div class="placar">
-  ${
-    statusDesafioIndex === "aguardando" && item.rodada === rodadaAtualIndex
-      ? "— x —"
-      : item.placar
+    if (item.status === "sobreviveu") {
+      classe = "sobreviveu";
+      statusTexto = "✅ Sobreviveu";
+    }
+
+    if (item.status === "eliminado") {
+      classe = "eliminado";
+      statusTexto = "❌ Eliminado";
+    }
   }
-</div>
-    <div class="status">${statusTexto}</div>
-  </div>
-</div>
-      `;
-    }).join("");
+
+  // destaque visual da rodada atual (sem spoiler)
+  if (rodadaAtualGlobal && item.rodada === rodadaAtualGlobal) {
+    classe += " atual";
+  }
+
+  return `
+    <div class="timeline-row ${classe}">
+      <div class="timeline-dot"></div>
+
+      <div class="timeline-item">
+        <div class="rodada">Rodada ${item.rodada}</div>
+        <div class="escolha">Time escolhido: <strong>${item.time}</strong></div>
+        <div class="placar">${placarTexto}</div>
+        <div class="status">${statusTexto}</div>
+      </div>
+    </div>
+  `;
+}).join("");
+
 
   } catch (err) {
     console.error(err);
