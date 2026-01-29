@@ -698,7 +698,7 @@ const btnConfirmarReset = document.getElementById("btnConfirmarReset");
 const btnCancelarReset = document.getElementById("btnCancelarReset");
 
 document.getElementById("btnResetSimulacao").addEventListener("click", () => {
-  if (statusDesafio === "aguardando" || statusDesafio === "finalizado") return;
+  if (statusDesafio === "finalizado") return;
   if (jogadorEliminado) return;
 
   modalReset.classList.add("ativo");

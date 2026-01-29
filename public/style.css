@@ -1914,3 +1914,7 @@ header {
   }
 }
 
+/* index — cards só aparecem quando JS liberar */
+.index-cards {
+  display: none;
+}
