@@ -153,7 +153,8 @@
 <script>
 
 let rodadaAtualGlobal = null;
-
+let statusDesafioIndex = null;
+let rodadaAtualIndex = null;
 
   async function carregarContextoDoJogo() {
   const token = localStorage.getItem("authToken");
@@ -228,7 +229,13 @@ let rodadaAtualGlobal = null;
   <div class="timeline-item">
     <div class="rodada">Rodada ${item.rodada}</div>
     <div class="escolha">Time escolhido: <strong>${item.time}</strong></div>
-    <div class="placar">${item.placar}</div>
+   <div class="placar">
+  ${
+    statusDesafioIndex === "aguardando" && item.rodada === rodadaAtualIndex
+      ? "— x —"
+      : item.placar
+  }
+</div>
     <div class="status">${statusTexto}</div>
   </div>
 </div>
@@ -273,7 +280,11 @@ async function carregarContextoIndex() {
 }
 
 function interpretarContextoIndex(data) {
-  const { desafio, usuario } = data;
+   const { desafio, usuario } = data;
+
+statusDesafioIndex = data.desafio.status;
+rodadaAtualIndex = data.desafio.rodadaAtual;
+
 
   rodadaAtualGlobal = desafio.rodadaAtual;
 
