@@ -433,19 +433,26 @@ if (bloquearEdicao) {
 let motivoHome = "";
 let motivoAway = "";
 
-if (timesJaUsados.includes(home)) {
-  motivoHome = "⚠️ Time já usado em outra rodada";
-}
-if (adversariosBloqueados.includes(away)) {
-  motivoHome = "🚫 Adversário já enfrentado 3 vezes";
+// ✅ só gera motivo se NÃO for rodada atual em aguardando
+const podeMostrarMotivo =
+  !(statusDesafio === "aguardando" && rodadaAtual === rodadaEmAndamento);
+
+if (podeMostrarMotivo) {
+  if (timesJaUsados.includes(home)) {
+    motivoHome = "⚠️ Time já usado em outra rodada";
+  }
+  if (adversariosBloqueados.includes(away)) {
+    motivoHome = "🚫 Adversário já enfrentado 3 vezes";
+  }
+
+  if (timesJaUsados.includes(away)) {
+    motivoAway = "⚠️ Time já usado em outra rodada";
+  }
+  if (adversariosBloqueados.includes(home)) {
+    motivoAway = "🚫 Adversário já enfrentado 3 vezes";
+  }
 }
 
-if (timesJaUsados.includes(away)) {
-  motivoAway = "⚠️ Time já usado em outra rodada";
-}
-if (adversariosBloqueados.includes(home)) {
-  motivoAway = "🚫 Adversário já enfrentado 3 vezes";
-}
 
        divJogo.innerHTML = `
   <div class="data-hora">
@@ -647,6 +654,14 @@ async function reinicializarSimulador() {
 
 function mostrarAvisoBloqueio(el, mensagem) {
 
+  // 🔕 não mostra aviso na rodada atual quando o status é aguardando
+  if (
+    statusDesafio === "aguardando" &&
+    rodadaAtual === rodadaEmAndamento
+  ) {
+    return;
+  }
+
   // 🔕 não cria tooltip se não tiver mensagem
   if (!mensagem) return;
 
@@ -666,6 +681,7 @@ function mostrarAvisoBloqueio(el, mensagem) {
     tooltip.remove();
   }, 1400);
 }
+
 
 // ==== INICIALIZAÇÃO ====
 (async function init() {

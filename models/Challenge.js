@@ -24,10 +24,17 @@ const ChallengeSchema = new mongoose.Schema({
   dataInicio: Date,
   dataFim: Date,
 
+    rodadasProcessadas: {
+    type: [Number],
+    default: []
+  },
+
   createdAt: {
     type: Date,
     default: Date.now
   }
+
+  
 });
 
 module.exports = mongoose.model("Challenge", ChallengeSchema);

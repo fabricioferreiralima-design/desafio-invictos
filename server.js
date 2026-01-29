@@ -942,6 +942,39 @@ async function resolverDesafioAdmin(req) {
   return desafio;
 }
 
+async function fecharRodada(desafio) {
+  const rodada = desafio.rodadaAtual;
+
+  console.log("🔒 Fechando rodada", rodada);
+
+  // 🔒 TRAVA DE SEGURANÇA (BANCO DE DADOS)
+  if (desafio.rodadasProcessadas?.includes(rodada)) {
+    console.log("⚠️ Rodada já processada, ignorando");
+    return;
+  }
+
+  // marca como processada ANTES (anti-duplo clique)
+  desafio.rodadasProcessadas.push(rodada);
+  await desafio.save();
+
+  // 1️⃣ pegar todos os palpites da rodada
+  const palpites = await Palpite.find({
+    challengeId: desafio._id,
+    rodada
+  });
+
+  const userIds = [...new Set(palpites.map(p => p.userId.toString()))];
+
+  // 2️⃣ avaliar cada jogador
+  for (const userId of userIds) {
+    await avaliarStatusDoJogador(userId);
+  }
+
+  console.log("✅ Rodada avaliada com sucesso");
+}
+
+
+
 app.post("/api/login", async (req, res) => {
   try {
     const { login, senha } = req.body;
@@ -1113,11 +1146,22 @@ app.put("/admin/challenges/:id", auth, authAdmin, async (req, res) => {
 
     const update = req.body;
 
-    const challenge = await Challenge.findByIdAndUpdate(
-      id,
-      update,
-      { new: true }
-    );
+    const desafioAntes = await Challenge.findById(id);
+
+const challenge = await Challenge.findByIdAndUpdate(
+  id,
+  update,
+  { new: true }
+);
+
+// 🔥 transição aguardando → ativo OU → finalizado
+if (
+  desafioAntes.status === "aguardando" &&
+  ["ativo", "finalizado"].includes(challenge.status)
+) {
+  await fecharRodada(challenge);
+}
+
 
     if (!challenge) {
       return res.status(404).json({ error: "Desafio não encontrado" });
