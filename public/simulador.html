@@ -465,11 +465,13 @@ if (adversariosBloqueados.includes(home)) {
 </div>
   </div>
 
-  <div class="placar">
-    ${jogo.goals.home ?? '-'}
-    <span style="opacity:.4">x</span>
-    ${jogo.goals.away ?? '-'}
-  </div>
+<div class="placar">
+  ${
+    statusDesafio === "aguardando" && rodadaAtual <= rodadaEmAndamento
+      ? "— <span style='opacity:.4'>x</span> —"
+      : `${jogo.goals.home ?? '-'} <span style="opacity:.4">x</span> ${jogo.goals.away ?? '-'}`
+  }
+</div>
 
   <div class="time-wrapper">
     <div class="time

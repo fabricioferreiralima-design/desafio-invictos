@@ -442,12 +442,20 @@ function mostrarMensagem(texto) {
   }
 }
 
+document.addEventListener("DOMContentLoaded", async () => {
 
-document.addEventListener("DOMContentLoaded", () => {
+  const contexto = await carregarContextoDoJogo();
+  if (!contexto) return;
+
   carregarContextoIndex();
   carregarLinhaDoTempo();
-  carregarEstatisticasIndex();
+
+  // 🔒 só busca estatísticas se pode mostrar resultado
+  if (contexto.status === "ativo" || contexto.status === "finalizado") {
+    carregarEstatisticasIndex();
+  }
 });
+
 
 document.addEventListener("desafioAlterado", async () => {
   console.log("🔄 Desafio alterado — recarregando linha do tempo");
