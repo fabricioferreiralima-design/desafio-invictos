@@ -400,6 +400,11 @@ if (statusDesafio === "finalizado") {
 }
 const rodadaPassada = rodadaAtual < rodadaEmAndamento;
 
+const rodadaAtualAguardando =
+  statusDesafio === "aguardando" &&
+  rodadaAtual === rodadaEmAndamento;
+
+
       jogosRodada.forEach(jogo => {
         const divJogo = document.createElement("div");
         divJogo.className = "jogo";
@@ -463,8 +468,9 @@ if (podeMostrarMotivo) {
 
   <div class="time-wrapper">
  <div class="time
-  ${isHomeDisabled ? 'desativado' : ''}
+   ${isHomeDisabled ? 'desativado' : ''}
   ${rodadaPassada ? 'passado' : ''}
+  ${rodadaAtualAguardando ? 'aguardando-atual' : ''}
   ${palpiteAtual === home ? 'selecionado' : ''}"
   data-time="${home}"
   data-motivo="${rodadaPassada ? '' : motivoHome}">
@@ -482,8 +488,9 @@ if (podeMostrarMotivo) {
 
   <div class="time-wrapper">
     <div class="time
-  ${isAwayDisabled ? 'desativado' : ''}
+ ${isAwayDisabled ? 'desativado' : ''}
   ${rodadaPassada ? 'passado' : ''}
+  ${rodadaAtualAguardando ? 'aguardando-atual' : ''}
   ${palpiteAtual === away ? 'selecionado' : ''}"
   data-time="${away}"
   data-motivo="${rodadaPassada ? '' : motivoAway}">

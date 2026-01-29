@@ -1918,3 +1918,9 @@ header {
 .index-cards {
   display: none;
 }
+
+/* 🚫 DESLIGA TOOLTIP CSS NA RODADA ATUAL EM AGUARDANDO */
+.time.aguardando-atual::after {
+  display: none !important;
+  content: "" !important;
+}
