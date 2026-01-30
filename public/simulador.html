@@ -221,6 +221,14 @@
       }
     });
 
+    // 🔥 ordenar jogos de cada rodada por data
+Object.keys(rodadas).forEach(r => {
+  rodadas[r].sort(
+    (a, b) => new Date(a.fixture.date) - new Date(b.fixture.date)
+  );
+});
+
+
     exibirRodada();
     await verificarStatusJogadorSimulador();
   }

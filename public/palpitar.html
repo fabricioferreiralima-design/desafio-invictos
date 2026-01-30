@@ -301,8 +301,23 @@ if (data.status === "eliminado" && data.rodadaEliminacao !== null) {
     const h=j.teams.home.name, a=j.teams.away.name;
 
     // agora avaliamos desativação consultando timesJaUsados E advBloqueados
-    const isHomeDesativ = timesJaUsados.includes(h) || advBloqueados.includes(a);
-    const isAwayDesativ = timesJaUsados.includes(a) || advBloqueados.includes(h);
+    let motivoHome = "";
+let motivoAway = "";
+
+if (timesJaUsados.includes(h)) {
+  motivoHome = "⚠️ Time já escolhido em outra rodada";
+} else if (advBloqueados.includes(a)) {
+  motivoHome = "🚫 Você já enfrentou esse adversário 3 vezes";
+}
+
+if (timesJaUsados.includes(a)) {
+  motivoAway = "⚠️ Time já escolhido em outra rodada";
+} else if (advBloqueados.includes(h)) {
+  motivoAway = "🚫 Você já enfrentou esse adversário 3 vezes";
+}
+
+const isHomeDesativ = !!motivoHome;
+const isAwayDesativ = !!motivoAway;
 
     // construir classes incluindo "selecionado" se for o timeSelecionado
     const homeClasses = ["time"];
@@ -320,8 +335,9 @@ div.innerHTML = `
 
     <div class="time-wrapper">
       <div
-        class="${homeClasses.join(" ")}"
-        ${isHomeDesativ ? "" : `onclick="selecionarTime('${h}')"`}>
+        cclass="${homeClasses.join(" ")}"
+  data-motivo="${motivoHome}"
+  ${isHomeDesativ ? "" : `onclick="selecionarTime('${h}')"`}>
         ${h}
       </div>
       <a href="#" class="odd" target="_blank" onclick="event.stopPropagation()">1.85</a>
@@ -332,7 +348,8 @@ div.innerHTML = `
     <div class="time-wrapper">
       <div
         class="${awayClasses.join(" ")}"
-        ${isAwayDesativ ? "" : `onclick="selecionarTime('${a}')"`}>
+  data-motivo="${motivoAway}"
+  ${isAwayDesativ ? "" : `onclick="selecionarTime('${a}')"`}>
         ${a}
       </div>
       <a href="#" class="odd" target="_blank" onclick="event.stopPropagation()">1.85</a>
