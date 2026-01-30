@@ -943,7 +943,7 @@ async function resolverDesafioAdmin(req) {
 }
 
 async function fecharRodada(desafio) {
-  const rodada = desafio.rodadaAtual;
+  const rodada = desafio.rodadaAtual-1;
 
   console.log("🔒 Fechando rodada", rodada);
 
