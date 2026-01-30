@@ -316,8 +316,11 @@ if (timesJaUsados.includes(a)) {
   motivoAway = "🚫 Você já enfrentou esse adversário 3 vezes";
 }
 
-const isHomeDesativ = !!motivoHome;
-const isAwayDesativ = !!motivoAway;
+const isHomeDesativ =
+  timesJaUsados.includes(h) || advBloqueados.includes(a);
+
+const isAwayDesativ =
+  timesJaUsados.includes(a) || advBloqueados.includes(h);
 
     // construir classes incluindo "selecionado" se for o timeSelecionado
     const homeClasses = ["time"];
@@ -335,7 +338,7 @@ div.innerHTML = `
 
     <div class="time-wrapper">
       <div
-        cclass="${homeClasses.join(" ")}"
+        class="${homeClasses.join(" ")}"
   data-motivo="${motivoHome}"
   ${isHomeDesativ ? "" : `onclick="selecionarTime('${h}')"`}>
         ${h}
