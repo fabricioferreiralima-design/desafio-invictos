@@ -326,10 +326,12 @@ nav ul li a.ativo {
   backdrop-filter: blur(6px);
 
   z-index: 50;
-
-  /* centralização real */
-  align-items: center;
+  
+/* 🔥 NOVO: aparece no topo */
+  align-items: flex-start;
   justify-content: center;
+
+  padding-top: 100px;   /* distância do topo no desktop */
 }
 
 /* card interno */
