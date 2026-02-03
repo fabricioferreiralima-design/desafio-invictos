@@ -326,7 +326,7 @@ nav ul li a.ativo {
   backdrop-filter: blur(6px);
 
   z-index: 50;
-  
+
 /* 🔥 NOVO: aparece no topo */
   align-items: flex-start;
   justify-content: center;
@@ -1985,4 +1985,27 @@ header {
 .time.aguardando-atual::after {
   display: none !important;
   content: "" !important;
+}
+
+@media (max-width: 480px) {
+  #bloqueioEliminado {
+    padding-top: 60px;   /* sobe mais no celular */
+  }
+}
+
+/* 🔒 Reset desativado quando usuário eliminado */
+#btnResetSimulacao:disabled {
+  background: #9CA3AF !important;      /* cinza */
+  color: #F3F4F6 !important;
+  cursor: not-allowed !important;
+
+  box-shadow: none !important;
+  opacity: 0.65;
+
+  filter: grayscale(40%);
+}
+
+/* remove efeito hover quando desativado */
+#btnResetSimulacao:disabled:hover {
+  transform: none !important;
 }
