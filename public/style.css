@@ -317,11 +317,71 @@ nav ul li a.ativo {
 
 #bloqueioEliminado {
   display: none;
+
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(4px);
-  z-index: 20;
+
+  /* 🔥 fundo mais escuro e profissional */
+  background: rgba(0, 0, 0, 0.82);
+  backdrop-filter: blur(6px);
+
+  z-index: 50;
+
+  /* centralização real */
+  align-items: center;
+  justify-content: center;
+}
+
+/* card interno */
+#bloqueioEliminado .overlay-box {
+  background: linear-gradient(180deg, #ffffff, #f9fafb);
+  color: #111827;
+
+  width: 90%;
+  max-width: 420px;
+
+  padding: 24px 22px;
+  border-radius: 18px;
+
+  text-align: center;
+
+  box-shadow: 0 24px 60px rgba(0,0,0,0.45);
+}
+
+/* título */
+#bloqueioEliminado h2 {
+  margin: 0 0 8px;
+
+  font-size: 22px;
+  font-weight: 900;
+
+  color: #b91c1c;
+}
+
+/* texto */
+#bloqueioEliminado p {
+  font-size: 15px;
+  font-weight: 700;
+
+  color: #111827;
+
+  margin: 0;
+}
+
+/* ===== 📱 MOBILE ===== */
+@media (max-width: 480px) {
+
+  #bloqueioEliminado .overlay-box {
+    padding: 18px 16px;
+  }
+
+  #bloqueioEliminado h2 {
+    font-size: 20px;
+  }
+
+  #bloqueioEliminado p {
+    font-size: 14px;
+  }
 }
 
 /* =========================================================

@@ -452,14 +452,14 @@ Object.keys(rodadas).forEach(r => {
 
   if (podeMostrarMotivo) {
     if (timesJaUsados.includes(home)) {
-      motivoHome = "⚠️ Time já usado em outra rodada";
+      motivoHome = "⚠️ Time já escolhido em outra rodada";
     }
     if (adversariosBloqueados.includes(away)) {
       motivoHome = "🚫 Adversário já enfrentado 3 vezes";
     }
 
     if (timesJaUsados.includes(away)) {
-      motivoAway = "⚠️ Time já usado em outra rodada";
+      motivoAway = "⚠️ Time já escolhido em outra rodada";
     }
     if (adversariosBloqueados.includes(home)) {
       motivoAway = "🚫 Adversário já enfrentado 3 vezes";
