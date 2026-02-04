@@ -146,16 +146,16 @@ async function obterPlayerChallenge(userId, challengeId) {
 
 async function avaliarStatusDoJogador(userId) {
 
-  const user = await User.findById(userId);
-  if (!user) return null;
-
   const palpites = await Palpite.find({ userId });
 
   for (const palpite of palpites) {
 
-    const pc = await obterPlayerChallenge(userId, palpite.challengeId);
+    const pc = await obterPlayerChallenge(
+      userId,
+      palpite.challengeId
+    );
 
-    // 🔒 Se já está eliminado nesse desafio, ignora
+    // 🔐 Se já está eliminado NESSE desafio, ignora
     if (pc.status === "eliminado") continue;
 
     const rodada = palpite.rodada;
@@ -209,13 +209,12 @@ async function avaliarStatusDoJogador(userId) {
 
       await pc.save();
 
-      return pc;
+      // ❌ REMOVIDO O RETURN AQUI
     }
   }
 
-  return null;
+  return true;
 }
-
 
 function obterChallengeIdAdmin(req) {
   const challengeId = req.headers["x-challenge-id"];
