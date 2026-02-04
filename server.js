@@ -26,6 +26,7 @@ const registerSchema = require("./validators/registerValidator");
   const { enviarEmailConfirmacao } = require("./utils/email");
   const authAdmin = require("./middlewares/authAdmin");
   const Challenge = require("./models/Challenge");
+  const PlayerChallenge = require("./models/PlayerChallenge");
   const path = require("path");
 
   const STATUS_RULES = {
@@ -116,30 +117,55 @@ async function resolverDesafio(req, user) {
   res.json({ ok: true, status: "online" });
 });
 
+
+async function obterPlayerChallenge(userId, challengeId) {
+  let pc = await PlayerChallenge.findOne({ userId, challengeId });
+
+  if (!pc) {
+    pc = await PlayerChallenge.create({
+      userId,
+      challengeId,
+      status: "ativo"
+    });
+  }
+
+  return pc;
+}
+
 async function avaliarStatusDoJogador(userId) {
+
   const user = await User.findById(userId);
-  if (!user || user.status === "eliminado") return user;
+  if (!user) return null;
 
   const palpites = await Palpite.find({ userId });
 
   for (const palpite of palpites) {
+
+    const pc = await obterPlayerChallenge(userId, palpite.challengeId);
+
+    // 🔒 Se já está eliminado nesse desafio, ignora
+    if (pc.status === "eliminado") continue;
+
     const rodada = palpite.rodada;
 
     const cacheKey = "jogos-brasileirao-2025";
-let dados = cache.get(cacheKey);
+    let dados = cache.get(cacheKey);
 
-if (!dados) {
-  const response = await axios.get("https://api-football-v1.p.rapidapi.com/v3/fixtures", {
-    params: { league: 71, season: 2026 },
-    headers: {
-      "X-RapidAPI-Key": process.env.RAPIDAPI_KEY,
-      "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
+    if (!dados) {
+      const response = await axios.get(
+        "https://api-football-v1.p.rapidapi.com/v3/fixtures",
+        {
+          params: { league: 71, season: 2026 },
+          headers: {
+            "X-RapidAPI-Key": process.env.RAPIDAPI_KEY,
+            "X-RapidAPI-Host": "api-football-v1.p.rapidapi.com"
+          }
+        }
+      );
+
+      dados = response.data;
+      cache.set(cacheKey, dados);
     }
-  });
-
-  dados = response.data;
-  cache.set(cacheKey, dados);
-}
 
     const jogosRodada = dados.response.filter(j =>
       j.league.round === `Regular Season - ${rodada}`
@@ -152,7 +178,6 @@ if (!dados) {
 
     if (!jogo) continue;
 
-    // Só avaliamos jogos finalizados
     if (jogo.fixture.status.short !== "FT") continue;
 
     const golsTime =
@@ -166,16 +191,19 @@ if (!dados) {
         : jogo.goals.home;
 
     if (golsTime < golsAdv) {
-      // ❌ PERDEU → eliminado
-      user.status = "eliminado";
-      user.rodadaEliminacao = rodada;
-      await user.save();
-      return user;
+
+      pc.status = "eliminado";
+      pc.rodadaEliminacao = rodada;
+
+      await pc.save();
+
+      return pc;
     }
   }
 
-  return user;
+  return null;
 }
+
 
 function obterChallengeIdAdmin(req) {
   const challengeId = req.headers["x-challenge-id"];
@@ -316,25 +344,36 @@ if (!desafioAtual) {
       rodada: desafioAtual.rodadaAtual
     });
 
+// 👇 NOVO: status por desafio
+const playerChallenge = await PlayerChallenge.findOne({
+  userId: user._id,
+  challengeId: desafioAtual._id
+});
+
+const statusJogador = playerChallenge?.status || "ativo";
+const rodadaKill = playerChallenge?.rodadaEliminacao || null;
+
 res.json({
-desafio: {
-  _id: desafioAtual._id,
-  nome: desafioAtual.nome,
-  tipo: desafioAtual.tipo,
-  status: desafioAtual.status,
+  desafio: {
+    _id: desafioAtual._id,
+    nome: desafioAtual.nome,
+    tipo: desafioAtual.tipo,
+    status: desafioAtual.status,
 
-  rodadaAtual: desafioAtual.rodadaAtual,
-  rodadaInicial: desafioAtual.rodadaInicial,
-  rodadaFinal: desafioAtual.rodadaFinal,
+    rodadaAtual: desafioAtual.rodadaAtual,
+    rodadaInicial: desafioAtual.rodadaInicial,
+    rodadaFinal: desafioAtual.rodadaFinal,
 
-  regras: STATUS_RULES[desafioAtual.status]
-},
+    regras: STATUS_RULES[desafioAtual.status]
+  },
+
   usuario: {
-    status: user.status,
-    rodadaEliminacao: user.rodadaEliminacao,
+    status: statusJogador,          // ✅ AGORA CORRETO
+    rodadaEliminacao: rodadaKill,   // ✅ AGORA CORRETO
     jaPalpitou
   }
 });
+
 
 
   } catch (err) {
@@ -366,11 +405,13 @@ desafio: {
     codigo: "EMAIL_NAO_VERIFICADO"
   });
 }
-    if (user.status === "eliminado") {
-      return res.status(403).json({
-        error: "Usuários eliminados não podem palpitar."
-      });
-    }
+   const pc = await obterPlayerChallenge(userId, desafioAtual._id);
+
+if (pc.status === "eliminado") {
+  return res.status(403).json({
+    error: "Você foi eliminado neste desafio e não pode mais palpitar."
+  });
+}
 
     /* ===========================
        2️⃣ Descobrir desafio atual
@@ -1024,18 +1065,133 @@ app.post("/api/login", async (req, res) => {
 
 
 app.get("/api/status-jogador", auth, async (req, res) => {
-  const user = await User.findById(req.userId);
+  try {
+    const user = await User.findById(req.userId);
+    if (!user) {
+      return res.status(401).json({ error: "Usuário não encontrado" });
+    }
 
-  res.json({
-    status: user.status || "ativo",
-    rodadaEliminacao: user.rodadaEliminacao || null,
-    emailConfirmado: user.emailConfirmado // 👈 LINHA QUE FALTAVA
-  });
+    const desafioAtual = await resolverDesafio(req, user);
+
+    if (!desafioAtual) {
+      return res.json({
+        status: "ativo",
+        rodadaEliminacao: null,
+        emailConfirmado: user.emailConfirmado
+      });
+    }
+
+    const pc = await PlayerChallenge.findOne({
+      userId: user._id,
+      challengeId: desafioAtual._id
+    });
+
+    res.json({
+      status: pc?.status || "ativo",
+      rodadaEliminacao: pc?.rodadaEliminacao || null,
+      emailConfirmado: user.emailConfirmado
+    });
+
+  } catch (err) {
+    console.error("Erro em /api/status-jogador:", err);
+    res.status(500).json({ error: "Erro ao buscar status do jogador" });
+  }
 });
+
 
 app.get("/admin/teste", auth, authAdmin, (req, res) => {
   res.json({ message: "Admin OK" });
 });
+
+app.post("/admin/migrar-status", auth, authAdmin, async (req, res) => {
+  try {
+    console.log("🚧 INICIANDO MIGRAÇÃO USER → PLAYER CHALLENGE");
+
+    const desafios = await Challenge.find();
+    const usuarios = await User.find();
+
+    let criados = 0;
+    let atualizados = 0;
+    let ignorados = 0;
+
+    for (const user of usuarios) {
+
+      // 1️⃣ Buscar palpites do usuário
+      const palpites = await Palpite.find({ userId: user._id });
+
+      if (!palpites.length) {
+        ignorados++;
+        continue;
+      }
+
+      // 2️⃣ Agrupar por desafio
+      const desafiosDoUser = [...new Set(
+        palpites.map(p => p.challengeId.toString())
+      )];
+
+      for (const challengeId of desafiosDoUser) {
+
+        const desafio = desafios.find(
+          d => d._id.toString() === challengeId
+        );
+
+        if (!desafio) continue;
+
+        // 3️⃣ Já existe PlayerChallenge?
+        let pc = await PlayerChallenge.findOne({
+          userId: user._id,
+          challengeId
+        });
+
+        if (!pc) {
+          pc = new PlayerChallenge({
+            userId: user._id,
+            challengeId,
+            status: "ativo"
+          });
+          criados++;
+        } else {
+          atualizados++;
+        }
+
+        // 4️⃣ Se usuário está eliminado GLOBAL,
+        // precisamos decidir SE foi nesse desafio
+        if (
+          user.status === "eliminado" &&
+          user.rodadaEliminacao
+        ) {
+
+          // verificar se ele tinha palpite nessa rodada dentro desse desafio
+          const palpiteKill = palpites.find(p =>
+            p.challengeId.toString() === challengeId &&
+            p.rodada === user.rodadaEliminacao
+          );
+
+          if (palpiteKill) {
+            pc.status = "eliminado";
+            pc.rodadaEliminacao = user.rodadaEliminacao;
+          }
+        }
+
+        await pc.save();
+      }
+    }
+
+    res.json({
+      ok: true,
+      resumo: {
+        criados,
+        atualizados,
+        ignorados
+      }
+    });
+
+  } catch (err) {
+    console.error("❌ ERRO MIGRAÇÃO:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 app.post("/api/reenviar-verificacao", auth, async (req, res) => {
   try {
@@ -1188,13 +1344,11 @@ app.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
 
     const totalIniciaram = iniciaram.length;
 
-    // ==========================
-    // 2️⃣ Eliminados (desafio)
-    // ==========================
-    const eliminados = await User.countDocuments({
-      status: "eliminado",
-      rodadaEliminacao: { $ne: null }
-    });
+   // 2️⃣ Eliminados NO DESAFIO (PlayerChallenge)
+const eliminados = await PlayerChallenge.countDocuments({
+  challengeId: desafio._id,
+  status: "eliminado"
+});
 
     // ==========================
     // 3️⃣ Vivos
@@ -1312,10 +1466,31 @@ app.get("/admin/paths", auth, authAdmin, async (req, res) => {
     const resultado = [];
 
     for (const grupo of Object.values(mapaPaths)) {
-      const usuarios = await User.find(
-        { _id: { $in: grupo.usuarios } },
-        "username status rodadaEliminacao"
-      );
+      const usuarios = await PlayerChallenge.aggregate([
+  {
+    $match: {
+      challengeId: desafio._id,
+      userId: { $in: grupo.usuarios.map(id => mongoose.Types.ObjectId(id)) }
+    }
+  },
+  {
+    $lookup: {
+      from: "users",
+      localField: "userId",
+      foreignField: "_id",
+      as: "u"
+    }
+  },
+  { $unwind: "$u" },
+  {
+    $project: {
+      username: "$u.username",
+      status: "$status",
+      rodadaEliminacao: "$rodadaEliminacao"
+    }
+  }
+]);
+
 
       resultado.push({
         quantidade: usuarios.length,
@@ -1339,42 +1514,83 @@ app.get("/admin/palpites", auth, authAdmin, async (req, res) => {
   try {
     const desafio = await resolverDesafioAdmin(req);
 
-    const palpites = await Palpite.aggregate([
-      {
-        $match: {
-          challengeId: desafio._id
+   const palpites = await Palpite.aggregate([
+
+  // 1️⃣ Somente do desafio atual
+  {
+    $match: {
+      challengeId: desafio._id
+    }
+  },
+
+  // 2️⃣ Join com USER (para username)
+  {
+    $lookup: {
+      from: "users",
+      localField: "userId",
+      foreignField: "_id",
+      as: "usuario"
+    }
+  },
+
+  {
+    $unwind: {
+      path: "$usuario",
+      preserveNullAndEmptyArrays: true
+    }
+  },
+
+  // 3️⃣ Join com PLAYER CHALLENGE (NOVO!)
+  {
+    $lookup: {
+      from: "playerchallenges",
+      let: { uid: "$userId" },
+      pipeline: [
+        {
+          $match: {
+            $expr: {
+              $and: [
+                { $eq: ["$userId", "$$uid"] },
+                { $eq: ["$challengeId", desafio._id] }
+              ]
+            }
+          }
         }
-      },
-      {
-        $lookup: {
-          from: User.collection.name,
-          localField: "userId",
-          foreignField: "_id",
-          as: "usuario"
-        }
-      },
-      {
-        $unwind: {
-          path: "$usuario",
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
-        $project: {
-          rodada: 1,
-          time: 1,
-          createdAt: 1,
-          username: "$usuario.username",
-          status: "$usuario.status"
-        }
-      },
-      {
-        $sort: {
-          rodada: 1,
-          createdAt: 1
-        }
-      }
-    ]);
+      ],
+      as: "pc"
+    }
+  },
+
+  {
+    $unwind: {
+      path: "$pc",
+      preserveNullAndEmptyArrays: true
+    }
+  },
+
+  // 4️⃣ PROJEÇÃO FINAL (preservando tudo que você já usava)
+  {
+    $project: {
+      rodada: 1,
+      time: 1,
+      createdAt: 1,
+
+      username: "$usuario.username",
+
+      // 🔥 AGORA CORRETO POR DESAFIO
+      status: "$pc.status"
+    }
+  },
+
+  // 5️⃣ Ordenação original preservada
+  {
+    $sort: {
+      rodada: 1,
+      createdAt: 1
+    }
+  }
+]);
+
 
     res.json(palpites);
 
@@ -1466,6 +1682,28 @@ app.get("/admin/usuarios", auth, authAdmin, async (req, res) => {
           totalPalpites: { $size: "$palpites" }
         }
       },
+
+      {
+  $lookup: {
+    from: "playerchallenges",
+    let: { userId: "$_id" },
+    pipeline: [
+      {
+        $match: {
+          $expr: {
+            $and: [
+              { $eq: ["$userId", "$$userId"] },
+              { $eq: ["$challengeId", challengeObjectId] }
+            ]
+          }
+        }
+      }
+    ],
+    as: "pc"
+  }
+},
+{ $unwind: { path: "$pc", preserveNullAndEmptyArrays: true } },
+
       {
         $project: {
           nome: 1,
@@ -1474,8 +1712,8 @@ app.get("/admin/usuarios", auth, authAdmin, async (req, res) => {
           email: 1,
           dataNascimento: 1,
           timeCoracao: 1,
-          status: 1,
-          rodadaEliminacao: 1,
+status: "$pc.status",
+rodadaEliminacao: "$pc.rodadaEliminacao",
           role: 1,
           createdAt: 1,
           totalPalpites: 1
@@ -1530,8 +1768,14 @@ app.get("/api/index/estatisticas", auth, async (req, res) => {
       u.palpites.some(p => p.rodada === desafio.rodadaInicial)
     ).length;
 
-    const eliminados = usuarios.filter(u => u.status === "eliminado").length;
-    const vivos = iniciaram - eliminados;
+  // 🔁 eliminados DO DESAFIO
+const eliminados = await PlayerChallenge.countDocuments({
+  challengeId: desafio._id,
+  status: "eliminado"
+});
+
+const vivos = iniciaram - eliminados;
+
 
     const percentualVivos =
       iniciaram > 0 ? Math.round((vivos / iniciaram) * 100) : 0;
@@ -1547,10 +1791,12 @@ app.get("/api/index/estatisticas", auth, async (req, res) => {
     });
 
     // eliminações na rodada
-    const eliminadosRodada = await User.countDocuments({
-      status: "eliminado",
-      rodadaEliminacao: rodada
-    });
+   const eliminadosRodada = await PlayerChallenge.countDocuments({
+  challengeId: desafio._id,
+  status: "eliminado",
+  rodadaEliminacao: rodada
+});
+
 
     // times mais escolhidos
     const topTimes = await Palpite.aggregate([
@@ -1572,15 +1818,16 @@ app.get("/api/index/estatisticas", auth, async (req, res) => {
 
     // time mais mortal
     const mortosPorTime = {};
-    const usuariosEliminados = await User.find({
-      status: "eliminado",
-      rodadaEliminacao: rodada
-    });
+ const pcsEliminados = await PlayerChallenge.find({
+  challengeId: desafio._id,
+  status: "eliminado",
+  rodadaEliminacao: rodada
+});
 
-    usuariosEliminados.forEach(u => {
-      const palpite = palpitesRodada.find(
-        p => p.userId.toString() === u._id.toString()
-      );
+   pcsEliminados.forEach(pc => {
+  const palpite = palpitesRodada.find(
+    p => p.userId.toString() === pc.userId.toString()
+  );
       if (palpite) {
         mortosPorTime[palpite.time] =
           (mortosPorTime[palpite.time] || 0) + 1;
