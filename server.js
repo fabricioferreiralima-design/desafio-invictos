@@ -55,6 +55,7 @@ const registerSchema = require("./validators/registerValidator");
 let rodadaAtual = 1;
 
 async function obterDesafioAtual(user) {
+
   const desafios = await Challenge.find({
     visivel: true,
     status: { $in: ["iniciando", "ativo", "aguardando", "finalizado"] }
@@ -62,22 +63,33 @@ async function obterDesafioAtual(user) {
 
   if (!desafios.length) return null;
 
-  // Apenas um desafio visível
+  // Se só existe 1, acabou
   if (desafios.length === 1) return desafios[0];
 
-  // Dois desafios (turno + returno)
   const turno = desafios.find(d => d.tipo === "turno");
   const returno = desafios.find(d => d.tipo === "returno");
 
-  // Usuário ainda vivo → continua no turno
-  if (user.status === "ativo" && turno) return turno;
+  // 🔥 NOVA LÓGICA BASEADA NO PLAYER CHALLENGE
+  if (turno) {
+    const pcTurno = await PlayerChallenge.findOne({
+      userId: user._id,
+      challengeId: turno._id
+    });
 
-  // Eliminado → vai pro returno
-  if (returno) return returno;
+    // Se nunca jogou turno OU ainda está ativo nele → fica no turno
+    if (!pcTurno || pcTurno.status === "ativo") {
+      return turno;
+    }
+  }
 
-  // Fallback de segurança
+  // Se chegou aqui → está eliminado no turno → vai pro returno
+  if (returno) {
+    return returno;
+  }
+
   return desafios[0];
 }
+
 
 async function resolverDesafio(req, user) {
   const challengeId = req.headers["x-challenge-id"];
@@ -405,21 +417,25 @@ res.json({
     codigo: "EMAIL_NAO_VERIFICADO"
   });
 }
-   const pc = await obterPlayerChallenge(userId, desafioAtual._id);
+
+/* ===========================
+   2️⃣ Descobrir desafio atual PRIMEIRO
+=========================== */
+const desafioAtual = await resolverDesafio(req, user);
+
+if (!desafioAtual) {
+  return res.status(404).json({ error: "Nenhum desafio ativo" });
+}
+
+/* ===========================
+   3️⃣ AGORA sim validar PlayerChallenge
+=========================== */
+const pc = await obterPlayerChallenge(userId, desafioAtual._id);
 
 if (pc.status === "eliminado") {
   return res.status(403).json({
     error: "Você foi eliminado neste desafio e não pode mais palpitar."
   });
-}
-
-    /* ===========================
-       2️⃣ Descobrir desafio atual
-    =========================== */
-   const desafioAtual = await resolverDesafio(req, user);
-
-if (!desafioAtual) {
-  return res.status(404).json({ error: "Nenhum desafio ativo" });
 }
 
     /* ===========================
@@ -1345,9 +1361,17 @@ app.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
     const totalIniciaram = iniciaram.length;
 
    // 2️⃣ Eliminados NO DESAFIO (PlayerChallenge)
+// 👇 SÓ é eliminado quem:
+// - tem PlayerChallenge eliminado
+// - E fez pelo menos 1 palpite nesse desafio
 const eliminados = await PlayerChallenge.countDocuments({
   challengeId: desafio._id,
-  status: "eliminado"
+  status: "eliminado",
+  userId: {
+    $in: await Palpite.distinct("userId", {
+      challengeId: desafio._id
+    })
+  }
 });
 
     // ==========================
@@ -1880,5 +1904,3 @@ app.get("/*", (req, res) => {
   app.listen(PORT, () => {
     console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
   });
-
-  
