@@ -279,7 +279,6 @@ app.get("/api/challenges/atual", auth, async (req, res) => {
   try {
     const userId = req.userId;
 
-    // 1️⃣ Buscar desafios ativos
     const desafios = await Challenge.find({
       status: { $in: ["ativo", "aguardando"] },
       visivel: true
@@ -289,36 +288,31 @@ app.get("/api/challenges/atual", auth, async (req, res) => {
       return res.status(404).json({ error: "Nenhum desafio ativo no momento" });
     }
 
-    // Se só existir um desafio, retorna ele
     if (desafios.length === 1) {
       return res.json(desafios[0]);
     }
 
-    // 2️⃣ Buscar status do usuário
-    const user = await User.findById(userId);
+    const turno = desafios.find(d => d.tipo === "turno");
+    const returno = desafios.find(d => d.tipo === "returno");
 
-    if (!user) {
-      return res.status(401).json({ error: "Usuário não encontrado" });
+    // 🔥 AQUI ESTÁ A CHAVE
+    if (turno) {
+      const pcTurno = await PlayerChallenge.findOne({
+        userId,
+        challengeId: turno._id
+      });
+
+      // Se nunca jogou turno OU está ativo nele
+      if (!pcTurno || pcTurno.status === "ativo") {
+        return res.json(turno);
+      }
     }
 
-    // 3️⃣ Lógica turno / returno
-    const desafioTurno = desafios.find(d => d.tipo === "turno");
-    const desafioReturno = desafios.find(d => d.tipo === "returno");
-
-    // Se ainda está vivo no turno → continua nele
-    if (
-      desafioTurno &&
-      user.status === "ativo"
-    ) {
-      return res.json(desafioTurno);
+    // Se chegou aqui → eliminado no turno → vai pro returno
+    if (returno) {
+      return res.json(returno);
     }
 
-    // Se eliminado → entra no returno
-    if (desafioReturno) {
-      return res.json(desafioReturno);
-    }
-
-    // fallback de segurança
     return res.json(desafios[0]);
 
   } catch (err) {
@@ -326,6 +320,7 @@ app.get("/api/challenges/atual", auth, async (req, res) => {
     res.status(500).json({ error: "Erro ao determinar desafio atual" });
   }
 });
+
 
 // 🎮 CONTEXTO DO JOGO (fonte única para o frontend)
 app.get("/api/jogo/contexto", auth, async (req, res) => {
