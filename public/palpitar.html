@@ -537,28 +537,31 @@ function aplicarEstadoDoDesafio(desafio) {
   const container = document.getElementById("jogosContainer");
   const btn = document.getElementById("btnConfirmar");
 
-  // reset visual
+  // 👉 Se o overlay de eliminado estiver visível, NÃO sobrescreve nada
+  const overlay = document.getElementById("bloqueioEliminado");
+  if (overlay.style.display === "flex") {
+    return false;
+  }
+
   container.innerHTML = "";
   btn.disabled = true;
   contador.textContent = "";
 
-  // ❌ RODADA EM ANDAMENTO
   if (desafio.status === "aguardando") {
     contador.textContent =
       "⏳ Agora já foi. Acompanhe a rodada e aproveite para fazer simulações.";
     return false;
   }
 
-  // ❌ DESAFIO ACABOU
   if (desafio.status === "finalizado") {
     contador.textContent =
       "🏁 Desafio finalizado. Obrigado por participar!";
     return false;
   }
 
-  // ✅ iniciando OU ativo → segue o fluxo normal
   return true;
 }
+
 
 function mostrarToast(mensagem, tipo = "sucesso", actionsHTML = "") {
   const toast = document.getElementById("toast");
@@ -607,12 +610,14 @@ if (titulo) {
   titulo.textContent = `Rodada ${rodadaFixa}`;
 }
 
-// 🔒 AGORA sim aplica o bloqueio
+// 1º — verifica se o JOGADOR está eliminado (prioridade total)
+await verificarStatusJogador();
+
+// 2º — só depois aplica regras do DESAFIO
 const podeContinuar = aplicarEstadoDoDesafio(desafioAtual);
 if (!podeContinuar) return;
 
-  await verificarStatusJogador();
-  await buscarJogos();
+await buscarJogos();
 }
 
 initPalpitar();

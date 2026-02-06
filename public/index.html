@@ -469,12 +469,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   const contexto = await carregarContextoDoJogo();
   if (!contexto) return;
 
-await carregarContextoIndex();
-await carregarLinhaDoTempo(); 
+  await carregarContextoIndex();
+  await carregarLinhaDoTempo(); 
 
-  // 🔒 só busca estatísticas se pode mostrar resultado
-  if (contexto.status === "ativo" || contexto.status === "finalizado") {
-    carregarEstatisticasIndex();
+  // ✅ Estatísticas aparecem em:
+  // - ativo
+  // - aguardando
+  // - finalizado
+  // ❌ NÃO aparecem em: iniciando
+  if (["ativo", "aguardando", "finalizado"].includes(contexto.status)) {
+    await carregarEstatisticasIndex();
   }
 });
 
