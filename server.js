@@ -1449,22 +1449,29 @@ if (desafio.status !== "finalizado") {
 
       for (const p of palpitesUser) {
 
-        const jogo = dados.response.find(j =>
-          j.league.round === `Regular Season - ${p.rodada}` &&
-          (
-            j.teams.home.name === p.time ||
-            j.teams.away.name === p.time
-          )
-        );
+  // 🚨 REGRA PRINCIPAL:
+  // IGNORA PALPITES DA RODADA ATUAL OU FUTURA
+  if (p.rodada >= desafio.rodadaAtual) {
+    continue;
+  }
 
-        if (!jogo) continue;
+  const jogo = dados.response.find(j =>
+    j.league.round === `Regular Season - ${p.rodada}` &&
+    (
+      j.teams.home.name === p.time ||
+      j.teams.away.name === p.time
+    )
+  );
 
-        // 👉 REGRA DE OURO
-        if (jogo.fixture.status.short !== "FT") {
-          temJogoAberto = true;
-          break;
-        }
-      }
+  if (!jogo) continue;
+
+  // ✅ AGORA SIM: pendência = jogo antigo NÃO FINALIZADO
+  if (jogo.fixture.status.short !== "FT") {
+    temJogoAberto = true;
+    break;
+  }
+}
+
 
       if (temJogoAberto) {
         pendentes++;
@@ -2013,17 +2020,63 @@ app.get("/api/index/estatisticas", auth, async (req, res) => {
       u.palpites.some(p => p.rodada === desafio.rodadaInicial)
     ).length;
 
-  // 🔁 eliminados DO DESAFIO
-const eliminados = await PlayerChallenge.countDocuments({
-  challengeId: desafio._id,
-  status: "eliminado"
-});
+    // 🔁 eliminados DO DESAFIO
+    const eliminados = await PlayerChallenge.countDocuments({
+      challengeId: desafio._id,
+      status: "eliminado"
+    });
 
-const vivos = iniciaram - eliminados;
-
+    const vivos = iniciaram - eliminados;
 
     const percentualVivos =
       iniciaram > 0 ? Math.round((vivos / iniciaram) * 100) : 0;
+
+    // ======================================================
+    // 🔥 CÁLCULO DOS PENDENTES (PARTE NOVA DE VERDADE)
+    // ======================================================
+
+    let pendentes = 0;
+
+    const ativos = await PlayerChallenge.find({
+      challengeId: desafio._id,
+      status: "ativo"
+    });
+
+    for (const pc of ativos) {
+
+      const palpitesUser = await Palpite.find({
+        userId: pc.userId,
+        challengeId: desafio._id
+      });
+
+      let temPendencia = false;
+
+      for (const p of palpitesUser) {
+
+  if (p.rodada >= desafio.rodadaAtual) continue;
+
+  const cacheKey = "jogos-brasileirao-2025";
+  const dados = cache.get(cacheKey);
+
+  if (!dados) continue;
+
+  const jogo = dados.response.find(j =>
+    j.league.round === `Regular Season - ${p.rodada}` &&
+    (
+      j.teams.home.name === p.time ||
+      j.teams.away.name === p.time
+    )
+  );
+
+  if (jogo && jogo.fixture.status.short !== "FT") {
+    temPendencia = true;
+    break;
+  }
+}
+
+
+      if (temPendencia) pendentes++;
+    }
 
     // =====================
     // ÚLTIMA RODADA FINALIZADA
@@ -2035,15 +2088,12 @@ const vivos = iniciaram - eliminados;
       rodada
     });
 
-    // eliminações na rodada
-   const eliminadosRodada = await PlayerChallenge.countDocuments({
-  challengeId: desafio._id,
-  status: "eliminado",
-  rodadaEliminacao: rodada
-});
+    const eliminadosRodada = await PlayerChallenge.countDocuments({
+      challengeId: desafio._id,
+      status: "eliminado",
+      rodadaEliminacao: rodada
+    });
 
-
-    // times mais escolhidos
     const topTimes = await Palpite.aggregate([
       {
         $match: {
@@ -2061,18 +2111,18 @@ const vivos = iniciaram - eliminados;
       { $limit: 3 }
     ]);
 
-    // time mais mortal
     const mortosPorTime = {};
- const pcsEliminados = await PlayerChallenge.find({
-  challengeId: desafio._id,
-  status: "eliminado",
-  rodadaEliminacao: rodada
-});
+    const pcsEliminados = await PlayerChallenge.find({
+      challengeId: desafio._id,
+      status: "eliminado",
+      rodadaEliminacao: rodada
+    });
 
-   pcsEliminados.forEach(pc => {
-  const palpite = palpitesRodada.find(
-    p => p.userId.toString() === pc.userId.toString()
-  );
+    pcsEliminados.forEach(pc => {
+      const palpite = palpitesRodada.find(
+        p => p.userId.toString() === pc.userId.toString()
+      );
+
       if (palpite) {
         mortosPorTime[palpite.time] =
           (mortosPorTime[palpite.time] || 0) + 1;
@@ -2082,18 +2132,24 @@ const vivos = iniciaram - eliminados;
     const timeMortal = Object.entries(mortosPorTime)
       .sort((a, b) => b[1] - a[1])[0];
 
+    // =====================
+    // ✅ RESPOSTA FINAL
+    // =====================
     res.json({
       desafio: {
-            rodadaAtual: desafio.rodadaAtual,
-    rodadaInicial: desafio.rodadaInicial,
-    rodadaResumo: rodada
+        rodadaAtual: desafio.rodadaAtual,
+        rodadaInicial: desafio.rodadaInicial,
+        rodadaResumo: rodada
       },
+
       jogadores: {
         iniciaram,
         vivos,
         eliminados,
+        pendentes,          // ✅ agora existe de verdade
         percentualVivos
       },
+
       rodada: {
         eliminados: eliminadosRodada,
         topTimes,
@@ -2108,6 +2164,7 @@ const vivos = iniciaram - eliminados;
     res.status(500).json({ error: "Erro ao carregar estatísticas" });
   }
 });
+
 
 // 🔁 fallback para frontend (Render / produção)
 app.get("/*", (req, res) => {
