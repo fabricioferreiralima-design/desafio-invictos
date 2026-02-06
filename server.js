@@ -1946,6 +1946,11 @@ app.get("/admin/pendentes/detalhe", auth, authAdmin, async (req, res) => {
 
       for (const p of palpites) {
 
+          // 🔥 REGRA OFICIAL IGUAL AO DASHBOARD
+  if (p.rodada >= desafio.rodadaAtual) {
+    continue;
+  }
+
         const jogo = dados?.response.find(j =>
           j.league.round === `Regular Season - ${p.rodada}` &&
           (
