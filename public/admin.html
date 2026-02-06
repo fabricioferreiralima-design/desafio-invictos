@@ -239,46 +239,50 @@
     <!-- KPIs -->
     <div class="dashboard-grid">
 
-      <div class="kpi-card">
-        <div class="kpi-title">Usuários cadastrados</div>
-        <div class="kpi-value" id="kpiUsuariosTotal">—</div>
-        <div class="kpi-sub">Total no sistema</div>
-      </div>
+  <div class="kpi-card">
+    <div class="kpi-title">Usuários cadastrados</div>
+    <div class="kpi-value" id="kpiUsuariosTotal">—</div>
+    <div class="kpi-sub">Total no sistema</div>
+  </div>
 
-      <div class="kpi-card">
-  <div class="kpi-title">Jogadores que iniciaram</div>
-  <div class="kpi-value" id="kpiUsuariosIniciaram">—</div>
-  <div class="kpi-sub">Palpitaram na rodada inicial</div>
-</div>
+  <div class="kpi-card">
+    <div class="kpi-title">Jogadores que iniciaram</div>
+    <div class="kpi-value" id="kpiUsuariosIniciaram">—</div>
+    <div class="kpi-sub">Palpitaram na rodada inicial</div>
+  </div>
 
- <div class="kpi-card">
-  <div class="kpi-title">Usuários ativos</div>
+  <!-- ✅ CARD ATIVOS -->
+  <div class="kpi-card">
+    <div class="kpi-title">Usuários ativos</div>
 
-  <div class="kpi-value" id="kpiUsuariosAtivos">—</div>
+    <div class="kpi-value" id="kpiUsuariosAtivos">—</div>
 
-<div class="kpi-sub">
-  (sendo
-  <span id="kpiPendentes"
-        style="cursor:pointer;color:#3f3fff;text-decoration:underline;"
-        onclick="abrirPendentes()">
-    —
-  </span>
-  pendentes)
-</div>
-
-      <div class="kpi-card">
-        <div class="kpi-title">Eliminados</div>
-        <div class="kpi-value" id="kpiUsuariosEliminados">—</div>
-        <div class="kpi-sub">Já fora da competição</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-title">Palpites feitos</div>
-        <div class="kpi-value" id="kpiPalpitesTotal">—</div>
-        <div class="kpi-sub">Todos os registros feitos</div>
-      </div>
-
+    <div class="kpi-sub">
+      (sendo
+        <span id="kpiPendentes"
+              style="cursor:pointer;color:#3f3fff;text-decoration:underline;"
+              onclick="abrirPendentes()">
+          —
+        </span>
+      pendentes)
     </div>
+  </div>
+
+  <!-- ✅ CARD ELIMINADOS SEPARADO -->
+  <div class="kpi-card">
+    <div class="kpi-title">Eliminados</div>
+    <div class="kpi-value" id="kpiUsuariosEliminados">—</div>
+    <div class="kpi-sub">Já fora da competição</div>
+  </div>
+
+  <!-- ✅ CARD PALPITES -->
+  <div class="kpi-card">
+    <div class="kpi-title">Palpites feitos</div>
+    <div class="kpi-value" id="kpiPalpitesTotal">—</div>
+    <div class="kpi-sub">Todos os registros feitos</div>
+  </div>
+
+</div>
 
     <!-- INSIGHTS DO JOGO -->
     <div class="section">
