@@ -138,6 +138,25 @@
   color: #3f3fff;
 }
 
+.modal {
+  position: fixed;
+  top:0; left:0;
+  width:100%;
+  height:100%;
+  background: rgba(0,0,0,.6);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:999;
+}
+
+.modal-content {
+  background:white;
+  padding:20px;
+  border-radius:10px;
+}
+
+
   </style>
 </head>
 
@@ -232,11 +251,20 @@
   <div class="kpi-sub">Palpitaram na rodada inicial</div>
 </div>
 
-      <div class="kpi-card">
-        <div class="kpi-title">Usuários ativos</div>
-        <div class="kpi-value" id="kpiUsuariosAtivos">—</div>
-        <div class="kpi-sub">Ainda vivos no jogo</div>
-      </div>
+ <div class="kpi-card">
+  <div class="kpi-title">Usuários ativos</div>
+
+  <div class="kpi-value" id="kpiUsuariosAtivos">—</div>
+
+<div class="kpi-sub">
+  (sendo
+  <span id="kpiPendentes"
+        style="cursor:pointer;color:#3f3fff;text-decoration:underline;"
+        onclick="abrirPendentes()">
+    —
+  </span>
+  pendentes)
+</div>
 
       <div class="kpi-card">
         <div class="kpi-title">Eliminados</div>
@@ -416,10 +444,10 @@ function renderConfig() {
 
       <label><strong>Status</strong></label>
       <select id="statusDesafio" style="width:100%; margin-bottom:15px;">
-<option value="iniciando">🟢 Iniciando (1ª rodada)</option>
-<option value="ativo">⚽ Ativo (palpites abertos)</option>
-<option value="aguardando">⏳ Aguardando (rodada em andamento)</option>
-<option value="finalizado">🏁 Finalizado</option>
+        <option value="iniciando">🟢 Iniciando</option>
+        <option value="ativo">⚽ Ativo</option>
+        <option value="aguardando">⏳ Aguardando</option>
+        <option value="finalizado">🏁 Finalizado</option>
       </select>
 
       <label>
@@ -429,13 +457,35 @@ function renderConfig() {
 
       <br><br>
 
-      <button onclick="salvarConfigDesafio()">💾 Salvar configurações</button>
+      <button onclick="salvarConfigDesafio()">
+        💾 Salvar configurações
+      </button>
+
+      <!-- 👇👇 AQUI COMEÇA A PARTE NOVA 👇👇 -->
+
+      <hr style="margin:20px 0;">
+
+      <h3>🧠 Resolver Jogos Adiados</h3>
+
+<p style="margin-bottom:10px;">
+  Este botão irá reavaliar automaticamente TODAS as rodadas que tinham
+  jogos pendentes e agora já estão finalizados.
+</p>
+
+<button onclick="reprocessarPendentes()">
+  🔁 Reprocessar todas com pendência
+</button>
+
+<div id="infoReprocessamento" style="margin-top:15px;"></div>
+
+      <!-- 👆👆 AQUI TERMINA A PARTE NOVA 👆👆 -->
 
     </div>
   `;
 
   carregarDesafiosAdmin();
 }
+
 
 function renderView(view) {
   const selectorBar = document.getElementById("adminChallengeBar");
@@ -454,6 +504,54 @@ function renderView(view) {
   if (view === "config") renderConfig();
 }
 
+async function abrirPendentes() {
+
+  const res = await fetch("/admin/pendentes/detalhe", {
+    headers: getAdminHeaders()
+  });
+
+  const dados = await res.json();
+
+  const div = document.getElementById("listaPendentes");
+
+  if (!dados.length) {
+    div.innerHTML = "<p>Nenhum pendente.</p>";
+  } else {
+
+    div.innerHTML = `
+      <table width="100%" cellpadding="6">
+        <tr>
+          <th>Usuário</th>
+          <th>Rodada</th>
+          <th>Time</th>
+          <th>Jogo</th>
+          <th>Status</th>
+          <th>Data</th>
+        </tr>
+
+        ${dados.map(d => `
+          <tr>
+            <td>${d.usuario}</td>
+            <td>${d.rodada}</td>
+            <td>${d.time}</td>
+            <td>${d.jogo}</td>
+            <td>${d.statusJogo}</td>
+            <td>
+              ${new Date(d.data).toLocaleString("pt-BR")}
+            </td>
+          </tr>
+        `).join("")}
+
+      </table>
+    `;
+  }
+
+  document.getElementById("modalPendentes").style.display = "block";
+}
+
+function fecharModalPendentes() {
+  document.getElementById("modalPendentes").style.display = "none";
+}
 
 
   menuLinks.forEach(link => {
@@ -494,6 +592,9 @@ document.getElementById("kpiUsuariosTotal").textContent =
 
 document.getElementById("kpiUsuariosAtivos").textContent =
   data.usuarios?.vivos ?? 0;
+
+  document.getElementById("kpiPendentes").textContent =
+  data.usuarios?.pendentes ?? 0;
 
 document.getElementById("kpiUsuariosEliminados").textContent =
   data.usuarios?.eliminados ?? 0;
@@ -1434,6 +1535,46 @@ async function salvarConfigDesafio() {
   preencherFormularioDesafio(atualizado);
 }
 
+async function reprocessarPendentes() {
+
+  const res = await fetch("/admin/reprocessar-pendentes", {
+    method: "POST",
+    headers: getAdminHeaders()
+  });
+
+  const data = await res.json();
+
+  const div = document.getElementById("infoReprocessamento");
+
+  if (!res.ok) {
+    div.innerHTML = `
+      <div class="kpi-card">
+        ❌ Erro: ${data.error}
+      </div>
+    `;
+    return;
+  }
+
+  if (!data.rodadasProcessadas.length) {
+    div.innerHTML = `
+      <div class="kpi-card">
+        ✅ Nenhuma rodada para reprocessar.
+      </div>
+    `;
+    return;
+  }
+
+  div.innerHTML = `
+    <div class="kpi-card">
+      ✅ Rodadas reprocessadas:
+      <strong>${data.rodadasProcessadas.join(", ")}</strong>
+    </div>
+  `;
+
+  // 🔁 Atualiza a tela atual (dashboard, usuários etc)
+  atualizarViewAtual();
+}
+
 
   (async () => {
   const ok = await validarAdmin();
@@ -1443,6 +1584,21 @@ async function salvarConfigDesafio() {
 })();
 
 </script>
+
+
+<div id="modalPendentes" class="modal" style="display:none;">
+  <div class="modal-content" style="max-width:900px;">
+
+    <h3>⏳ Jogadores com pendência</h3>
+
+    <div id="listaPendentes"></div>
+
+    <button onclick="fecharModalPendentes()">
+      Fechar
+    </button>
+
+  </div>
+</div>
 
 </body>
 </html>

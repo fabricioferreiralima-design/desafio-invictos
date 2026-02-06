@@ -110,10 +110,27 @@
           <strong id="statIniciaram">—</strong>
         </div>
 
-        <div class="stat">
-          <span>🟢 Ainda vivos</span>
-          <strong class="alive" id="statVivos">—</strong>
-        </div>
+       <div class="stat">
+  <span>🟢 Ainda vivos</span>
+
+  <div style="display:flex; align-items:baseline; gap:8px;">
+    <strong class="alive" id="statVivos">—</strong>
+
+    <small id="statPendentesBox"
+     title="Jogadores ativos com jogo ainda não finalizado"
+      style="
+        display:none;
+        color:#b45309;
+        background:#fffbeb;
+        border:1px solid #fde68a;
+        padding:2px 6px;
+        border-radius:6px;
+        font-size:12px;
+      ">
+      ⏳ <span id="statPendentes">—</span> pendentes
+    </small>
+  </div>
+</div>
 
         <div class="stat">
           <span>🔴 Eliminados</span>
@@ -299,6 +316,8 @@ rodadaAtualIndex = data.desafio.rodadaAtual;
 
   rodadaAtualGlobal = desafio.rodadaAtual;
 
+  
+
   // 🟥 DESAFIO FINALIZADO
   if (desafio.status === "finalizado") {
     if (usuario.status === "eliminado") {
@@ -331,6 +350,19 @@ rodadaAtualIndex = data.desafio.rodadaAtual;
 
   // 🟢 DESAFIO INICIANDO ou ATIVO
   if (desafio.status === "iniciando" || desafio.status === "ativo") {
+
+// ==========================================
+  // 🟡 MENSAGEM ESPECIAL DE JOGO ADIADO
+  // ==========================================
+  if (usuario.pendencia && usuario.pendencia.rodada) {
+
+    mostrarMensagem(
+      `🟢 Você está vivo! Mas se liga que ainda tem jogo adiado da Rodada ${usuario.pendencia.rodada}. Bora palpitar a próxima rodada!`
+    );
+
+    return;
+  }
+
 
     // ainda não palpitou
     if (!usuario.jaPalpitou) {
@@ -405,6 +437,18 @@ async function carregarEstatisticasIndex() {
 
     document.getElementById("statVivos").textContent =
       data.jogadores.vivos;
+
+      // ===== PENDENTES (novo) =====
+const pendBox = document.getElementById("statPendentesBox");
+const pendSpan = document.getElementById("statPendentes");
+
+if (data.jogadores.pendentes && data.jogadores.pendentes > 0) {
+  pendBox.style.display = "inline-block";
+  pendSpan.textContent = data.jogadores.pendentes;
+} else {
+  pendBox.style.display = "none";
+}
+
 
     document.getElementById("statEliminados").textContent =
       data.jogadores.eliminados;

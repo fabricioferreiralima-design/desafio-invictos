@@ -359,6 +359,49 @@ const playerChallenge = await PlayerChallenge.findOne({
 const statusJogador = playerChallenge?.status || "ativo";
 const rodadaKill = playerChallenge?.rodadaEliminacao || null;
 
+// ================================
+// 🔎 DETECTAR PENDÊNCIA DO USUÁRIO
+// ================================
+let pendencia = null;
+
+if (statusJogador === "ativo") {
+
+  const cacheKey = "jogos-brasileirao-2025";
+  const dados = cache.get(cacheKey);
+
+  if (dados) {
+
+    const palpitesUser = await Palpite.find({
+      userId: user._id,
+      challengeId: desafioAtual._id
+    });
+
+    for (const p of palpitesUser) {
+
+      const jogo = dados.response.find(j =>
+        j.league.round === `Regular Season - ${p.rodada}` &&
+        (
+          j.teams.home.name === p.time ||
+          j.teams.away.name === p.time
+        )
+      );
+
+      if (!jogo) continue;
+
+      // 👉 SE O JOGO NÃO ESTÁ FINALIZADO
+      if (jogo.fixture.status.short !== "FT") {
+        pendencia = {
+          rodada: p.rodada
+        };
+        break;
+      }
+    }
+  }
+}
+
+// ================================
+// 🔁 RETORNO ORIGINAL + PENDÊNCIA
+// ================================
 res.json({
   desafio: {
     _id: desafioAtual._id,
@@ -374,9 +417,12 @@ res.json({
   },
 
   usuario: {
-    status: statusJogador,          // ✅ AGORA CORRETO
-    rodadaEliminacao: rodadaKill,   // ✅ AGORA CORRETO
-    jaPalpitou
+    status: statusJogador,
+    rodadaEliminacao: rodadaKill,
+    jaPalpitou,
+
+    // 👉 NOVO CAMPO
+    pendencia
   }
 });
 
@@ -1374,6 +1420,60 @@ const eliminados = await PlayerChallenge.countDocuments({
     const vivos = Math.max(totalIniciaram - eliminados, 0);
 
     // ==========================
+// 3.1️⃣ Cálculo de PENDENTES (regra oficial)
+// ==========================
+let pendentes = 0;
+
+if (desafio.status !== "finalizado") {
+
+  // 🔹 todos os jogadores ativos do desafio
+  const ativosPC = await PlayerChallenge.find({
+    challengeId: desafio._id,
+    status: "ativo"
+  });
+
+  const cacheKey = "jogos-brasileirao-2025";
+  const dados = cache.get(cacheKey);
+
+  if (dados) {
+
+    for (const pc of ativosPC) {
+
+      // TODOS os palpites do jogador nesse desafio
+      const palpitesUser = await Palpite.find({
+        userId: pc.userId,
+        challengeId: desafio._id
+      });
+
+      let temJogoAberto = false;
+
+      for (const p of palpitesUser) {
+
+        const jogo = dados.response.find(j =>
+          j.league.round === `Regular Season - ${p.rodada}` &&
+          (
+            j.teams.home.name === p.time ||
+            j.teams.away.name === p.time
+          )
+        );
+
+        if (!jogo) continue;
+
+        // 👉 REGRA DE OURO
+        if (jogo.fixture.status.short !== "FT") {
+          temJogoAberto = true;
+          break;
+        }
+      }
+
+      if (temJogoAberto) {
+        pendentes++;
+      }
+    }
+  }
+}
+
+    // ==========================
     // 4️⃣ Usuários cadastrados (global)
     // ==========================
     const totalUsuarios = await User.countDocuments();
@@ -1390,7 +1490,8 @@ const eliminados = await PlayerChallenge.countDocuments({
         total: totalUsuarios,
         iniciaram: totalIniciaram,
         vivos,
-        eliminados
+        eliminados,
+        pendentes
       },
       palpites: {
         total: totalPalpites
@@ -1748,6 +1849,132 @@ rodadaEliminacao: "$pc.rodadaEliminacao",
   }
 });
 
+app.post("/admin/reprocessar-pendentes", auth, authAdmin, async (req, res) => {
+  try {
+
+    const desafio = await resolverDesafioAdmin(req);
+
+    const cacheKey = "jogos-brasileirao-2025";
+    const dados = cache.get(cacheKey);
+
+    if (!dados) {
+      return res.status(400).json({
+        error: "Cache de jogos não carregado"
+      });
+    }
+
+    const palpites = await Palpite.find({
+      challengeId: desafio._id
+    });
+
+    const rodadasComPendencia = new Set();
+
+    for (const p of palpites) {
+
+      const jogo = dados.response.find(j =>
+        j.league.round === `Regular Season - ${p.rodada}` &&
+        (
+          j.teams.home.name === p.time ||
+          j.teams.away.name === p.time
+        )
+      );
+
+      if (!jogo) continue;
+
+      // 👉 Se jogo já virou FT → pode reprocessar essa rodada
+      if (jogo.fixture.status.short === "FT") {
+        rodadasComPendencia.add(p.rodada);
+      }
+    }
+
+    const processadas = [];
+
+    for (const rodada of rodadasComPendencia) {
+
+      // evita duplo processamento
+      if (desafio.rodadasProcessadas?.includes(rodada)) {
+        continue;
+      }
+
+      desafio.rodadaAtual = rodada + 1;
+      await fecharRodada(desafio);
+
+      processadas.push(rodada);
+    }
+
+    res.json({
+      ok: true,
+      rodadasProcessadas: processadas
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+app.get("/admin/pendentes/detalhe", auth, authAdmin, async (req, res) => {
+  try {
+    const desafio = await resolverDesafioAdmin(req);
+
+    const ativos = await PlayerChallenge.find({
+      challengeId: desafio._id,
+      status: "ativo"
+    });
+
+    const cacheKey = "jogos-brasileirao-2025";
+    const dados = cache.get(cacheKey);
+
+    const resultado = [];
+
+    for (const pc of ativos) {
+
+      const user = await User.findById(pc.userId);
+
+      const palpites = await Palpite.find({
+        userId: pc.userId,
+        challengeId: desafio._id
+      });
+
+      for (const p of palpites) {
+
+        const jogo = dados?.response.find(j =>
+          j.league.round === `Regular Season - ${p.rodada}` &&
+          (
+            j.teams.home.name === p.time ||
+            j.teams.away.name === p.time
+          )
+        );
+
+        if (!jogo) continue;
+
+        if (jogo.fixture.status.short !== "FT") {
+
+          resultado.push({
+            usuario: user.username,
+            rodada: p.rodada,
+            time: p.time,
+
+            jogo: `${jogo.teams.home.name} x ${jogo.teams.away.name}`,
+
+            statusJogo: jogo.fixture.status.long || "Aguardando",
+
+            data: jogo.fixture.date
+          });
+        }
+      }
+    }
+
+    res.json(resultado);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 app.get("/api/index/estatisticas", auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
@@ -1890,6 +2117,55 @@ app.get("/*", (req, res) => {
 
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
+
+app.get("/admin/rodada/:rodada/pendencias", auth, authAdmin, async (req, res) => {
+  try {
+    const rodada = Number(req.params.rodada);
+    const desafio = await resolverDesafioAdmin(req);
+
+    const palpites = await Palpite.find({
+      challengeId: desafio._id,
+      rodada
+    });
+
+    const cacheKey = "jogos-brasileirao-2025";
+    let dados = cache.get(cacheKey);
+
+    const jogosRodada = dados.response.filter(j =>
+      j.league.round === `Regular Season - ${rodada}`
+    );
+
+    let pendentes = 0;
+    let resolvidos = 0;
+
+    for (const p of palpites) {
+      const jogo = jogosRodada.find(j =>
+        j.teams.home.name === p.time ||
+        j.teams.away.name === p.time
+      );
+
+      if (!jogo) continue;
+
+      if (jogo.fixture.status.short === "FT") {
+        resolvidos++;
+      } else {
+        pendentes++;
+      }
+    }
+
+    res.json({
+      rodada,
+      total: palpites.length,
+      resolvidos,
+      pendentes
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 
 
