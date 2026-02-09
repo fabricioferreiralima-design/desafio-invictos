@@ -251,9 +251,7 @@ async function verificarStatusJogador() {
     if (!token) return;
 
     const res = await fetch("/api/status-jogador", {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
+      headers: getAuthHeaders()
     });
 
     const data = await res.json();

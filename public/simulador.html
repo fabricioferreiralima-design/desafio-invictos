@@ -272,7 +272,7 @@ Object.keys(rodadas).forEach(r => {
       if (!token) return;
 
       const res = await fetch("/api/status-jogador", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: getAuthHeaders()
       });
 
       const data = await res.json();
