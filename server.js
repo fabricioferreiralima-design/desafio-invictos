@@ -1596,7 +1596,7 @@ app.get("/admin/paths", auth, authAdmin, async (req, res) => {
   {
     $match: {
       challengeId: desafio._id,
-      userId: { $in: grupo.usuarios.map(id => mongoose.Types.ObjectId(id)) }
+      userId: { $in: grupo.usuarios.map(id => new mongoose.Types.ObjectId(id)) }
     }
   },
   {
