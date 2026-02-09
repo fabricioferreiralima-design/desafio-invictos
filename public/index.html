@@ -337,7 +337,7 @@ rodadaAtualIndex = data.desafio.rodadaAtual;
     mostrarMensagem(
       `❌ Deu ruim! Você foi eliminado na rodada ${usuario.rodadaEliminacao}.`
     );
-    return;
+    
   }
 
   // 🟡 DESAFIO AGUARDANDO (rodada em andamento)
@@ -414,10 +414,10 @@ async function carregarEstatisticasIndex() {
     const token = localStorage.getItem("authToken");
 
     const res = await fetch("/api/index/estatisticas", {
-      headers: {
-        Authorization: `Bearer ${token}`
+      headers: 
+        getAuthHeaders()
       }
-    });
+    );
 
     if (!res.ok) throw new Error("Erro ao buscar estatísticas");
 
