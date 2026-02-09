@@ -12,7 +12,7 @@ const PalpiteSchema = new mongoose.Schema({
   challengeId: {
   type: mongoose.Schema.Types.ObjectId,
   ref: "Challenge",
-  required: false // 👈 MUITO IMPORTANTE
+  required: true
 }
 
 });

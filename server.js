@@ -144,9 +144,9 @@ async function obterPlayerChallenge(userId, challengeId) {
   return pc;
 }
 
-async function avaliarStatusDoJogador(userId) {
+async function avaliarStatusDoJogador(userId, challengeId) {
 
-  const palpites = await Palpite.find({ userId });
+  const palpites = await Palpite.find({ userId, challengeId });
 
   for (const palpite of palpites) {
 
@@ -1064,7 +1064,7 @@ async function fecharRodada(desafio) {
 
   // 2️⃣ avaliar cada jogador
   for (const userId of userIds) {
-    await avaliarStatusDoJogador(userId);
+    await avaliarStatusDoJogador(userId, desafio._id);
   }
 
   console.log("✅ Rodada avaliada com sucesso");
@@ -2226,10 +2226,6 @@ app.get("/admin/rodada/:rodada/pendencias", auth, authAdmin, async (req, res) =>
     res.status(500).json({ error: err.message });
   }
 });
-
-
-
-
 
   // 8️⃣ Iniciar servidor
   const PORT = process.env.PORT || 3000;
