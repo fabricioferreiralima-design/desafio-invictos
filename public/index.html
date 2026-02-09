@@ -181,10 +181,10 @@ let rodadaAtualIndex = null;
   }
 
   const res = await fetch("/api/jogo/contexto", {
-      headers: {
-        Authorization: `Bearer ${token}`
+      headers: 
+        getAuthHeaders()
       }
-  });
+  );
 
   if (!res.ok) {
     throw new Error("Erro ao carregar contexto do jogo");
