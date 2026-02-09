@@ -337,6 +337,8 @@ rodadaAtualIndex = data.desafio.rodadaAtual;
     mostrarMensagem(
       `❌ Deu ruim! Você foi eliminado na rodada ${usuario.rodadaEliminacao}.`
     );
+
+    return;
     
   }
 
@@ -516,15 +518,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const contexto = await carregarContextoDoJogo();
   if (!contexto) return;
 
+  // 1️⃣ Primeiro contexto e timeline
   await carregarContextoIndex();
   await carregarLinhaDoTempo(); 
 
-  // ✅ Estatísticas aparecem em:
-  // - ativo
-  // - aguardando
-  // - finalizado
-  // ❌ NÃO aparecem em: iniciando
-  if (["ativo", "aguardando", "finalizado"].includes(contexto.status)) {
+  // 2️⃣ Estatísticas dependem SÓ do status do DESAFIO
+  const status = contexto.status;
+
+  if (status === "ativo" || status === "aguardando" || status === "finalizado") {
     await carregarEstatisticasIndex();
   }
 });
