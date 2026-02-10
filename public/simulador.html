@@ -259,42 +259,63 @@ Object.keys(rodadas).forEach(r => {
       let jogadorEliminado = false;
 
       async function verificarStatusJogadorSimulador() {
-    const overlay = document.getElementById("bloqueioEliminado");
-    const msg = document.getElementById("mensagemEliminacao");
 
-    // estado seguro por padrão
-    jogadorEliminado = false;
-    overlay.style.display = "none";
-    msg.textContent = "";
+  const overlay = document.getElementById("bloqueioEliminado");
+  const msg = document.getElementById("mensagemEliminacao");
 
-    try {
-      const token = localStorage.getItem("authToken");
-      if (!token) return;
+  jogadorEliminado = false;
+  overlay.style.display = "none";
+  msg.textContent = "";
 
-      const res = await fetch("/api/status-jogador", {
-        headers: getAuthHeaders()
-      });
+  try {
 
-      const data = await res.json();
+    const res = await fetch("/api/jogo/contexto", {
+      headers: getAuthHeaders()
+    });
 
-      // ✅ REGRA CORRETA
-      if (
-        data.status === "eliminado" &&
-        typeof data.rodadaEliminacao === "number" &&
-        data.rodadaEliminacao <= rodadaEmAndamento
-      ) {
-        jogadorEliminado = true;
-        overlay.style.display = "flex";
-        msg.textContent = `Você foi eliminado na rodada ${data.rodadaEliminacao}.`;
+    const data = await res.json();
 
-        const btnReset = document.getElementById("btnResetSimulacao");
-        if (btnReset) btnReset.disabled = true;
-      }
+    const usuario = data.usuario;
+    const desafio = data.desafio;
 
-    } catch (err) {
-      console.error("Erro ao verificar status do jogador:", err);
+    // ❌ BLOQUEIO DEFINITIVO
+    if (
+      usuario.status === "nao_inscrito" &&
+      desafio.status !== "iniciando"
+    ) {
+
+      jogadorEliminado = true;
+
+      overlay.style.display = "flex";
+
+      msg.textContent =
+        "🔒 Você não entrou no desafio a tempo. " +
+        "Aguarde o próximo desafio para participar.";
+
+      return;
     }
+
+    // ❌ ELIMINADO normal
+    if (
+      usuario.status === "eliminado" &&
+      typeof usuario.rodadaEliminacao === "number" &&
+      usuario.rodadaEliminacao <= rodadaEmAndamento
+    ) {
+
+      jogadorEliminado = true;
+
+      overlay.style.display = "flex";
+
+      msg.textContent =
+        `Você foi eliminado na rodada ${usuario.rodadaEliminacao}.`;
+
+      return;
+    }
+
+  } catch (err) {
+    console.error(err);
   }
+}
 
 
 

@@ -224,6 +224,12 @@ function obterChallengeIdAdmin(req) {
   return new mongoose.Types.ObjectId(challengeId);
 }
 
+function interpretarStatus(pc) {
+  if (!pc) return "nao_inscrito";
+  return pc.status;
+}
+
+
 
   // 6️⃣ Endpoint para buscar jogos da API-Football
   app.get("/api/jogos", async (req, res) => {
@@ -302,9 +308,9 @@ app.get("/api/challenges/atual", auth, async (req, res) => {
       });
 
       // Se nunca jogou turno OU está ativo nele
-      if (!pcTurno || pcTurno.status === "ativo") {
-        return res.json(turno);
-      }
+   if (pcTurno && pcTurno.status === "ativo") {
+  return res.json(turno);
+}
     }
 
     // Se chegou aqui → eliminado no turno → vai pro returno
@@ -356,7 +362,7 @@ const playerChallenge = await PlayerChallenge.findOne({
   challengeId: desafioAtual._id
 });
 
-const statusJogador = playerChallenge?.status || "ativo";
+const statusJogador = interpretarStatus(playerChallenge);
 const rodadaKill = playerChallenge?.rodadaEliminacao || null;
 
 // ================================
@@ -1142,11 +1148,11 @@ app.get("/api/status-jogador", auth, async (req, res) => {
       challengeId: desafioAtual._id
     });
 
-    res.json({
-      status: pc?.status || "ativo",
-      rodadaEliminacao: pc?.rodadaEliminacao || null,
-      emailConfirmado: user.emailConfirmado
-    });
+res.json({
+  status: interpretarStatus(pc),
+  rodadaEliminacao: pc?.rodadaEliminacao || null,
+  emailConfirmado: user.emailConfirmado
+});
 
   } catch (err) {
     console.error("Erro em /api/status-jogador:", err);
@@ -1838,7 +1844,9 @@ app.get("/admin/usuarios", auth, authAdmin, async (req, res) => {
           email: 1,
           dataNascimento: 1,
           timeCoracao: 1,
-status: "$pc.status",
+status: {
+  $ifNull: ["$pc.status", "nao_inscrito"]
+},
 rodadaEliminacao: "$pc.rodadaEliminacao",
           role: 1,
           createdAt: 1,

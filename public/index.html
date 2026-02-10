@@ -173,6 +173,31 @@ let rodadaAtualGlobal = null;
 let statusDesafioIndex = null;
 let rodadaAtualIndex = null;
 
+function podeEntrarNoDesafio(usuario, desafio) {
+
+  // já é participante
+  if (usuario.status === "ativo")
+    return true;
+
+  // ainda não entrou, mas desafio está iniciando
+  if (
+    usuario.status === "nao_inscrito" &&
+    desafio.status === "iniciando"
+  )
+    return true;
+
+  return false;
+}
+
+function bloqueioDefinitivo(usuario, desafio) {
+
+  return (
+    usuario.status === "nao_inscrito" &&
+    desafio.status !== "iniciando"
+  );
+}
+
+
   async function carregarContextoDoJogo() {
   const token = localStorage.getItem("authToken");
 
@@ -316,7 +341,40 @@ rodadaAtualIndex = data.desafio.rodadaAtual;
 
   rodadaAtualGlobal = desafio.rodadaAtual;
 
-  
+  // =====================================================
+  // 🛑 BLOQUEIO DEFINITIVO — perdeu janela da 1ª rodada
+  // =====================================================
+  if (bloqueioDefinitivo(usuario, desafio)) {
+
+    mostrarMensagem(
+      "⛔ Você não entrou no desafio a tempo. " +
+      "Aguarde o próximo desafio para participar."
+    );
+
+    document.querySelector(".index-dashboard").style.display = "none";
+
+    return;
+  }
+
+  // =====================================================
+  // 🟢 PODE ENTRAR (mensagem atual mantida!)
+  // =====================================================
+ if (
+  usuario.status === "nao_inscrito" &&
+  desafio.status === "iniciando"
+) {
+
+  mostrarMensagem(
+    "🔥 Chega mais! O desafio já vai começar. É hora de palpitar."
+  );
+
+  // ✅ GARANTE QUE O DASHBOARD FIQUE VISÍVEL
+  const dash = document.querySelector(".index-dashboard");
+  if (dash) dash.style.display = "";
+
+  return;
+}
+
 
   // 🟥 DESAFIO FINALIZADO
   if (desafio.status === "finalizado") {
