@@ -678,9 +678,29 @@ app.get("/api/linha-do-tempo", auth, async (req, res) => {
       challengeId: desafioAtual._id
     }).sort({ rodada: 1 });
 
-    if (!palpites.length) {
-      return res.json([]);
+   // 🔥 NOVO: verificar se foi eliminado por não palpitar
+const pc = await PlayerChallenge.findOne({
+  userId,
+  challengeId: desafioAtual._id
+});
+
+// se não tem palpites MAS foi eliminado por nao_palpitou
+if (!palpites.length && pc?.status === "eliminado" && pc?.motivo === "nao_palpitou") {
+  return res.json([
+    {
+      rodada: pc.rodadaEliminacao,
+      time: "—",
+      placar: "Você não realizou palpite nesta rodada",
+      status: "eliminado",
+      tipo: "nao_palpitou"
     }
+  ]);
+}
+
+if (!palpites.length) {
+  return res.json([]);
+}
+
 
       // 3️⃣ Buscar jogos do cache (ou API se necessário)
     const cacheKey = "jogos-brasileirao-2025";
@@ -738,6 +758,17 @@ app.get("/api/linha-do-tempo", auth, async (req, res) => {
 
       let status = "aguardando";
       let placar = "Aguardando jogo...";
+
+// 🔥 caso seja linha de nao_palpitou (proteção futura)
+if (p.tipo === "nao_palpitou") {
+  return {
+    rodada: p.rodada,
+    time: "—",
+    placar: "Você não realizou palpite",
+    status: "eliminado"
+  };
+}
+
 
       // jogo já aconteceu?
       if (golsHome !== null && golsAway !== null) {
@@ -1050,17 +1081,19 @@ async function fecharRodada(desafio) {
 
   console.log("🔒 Fechando rodada", rodada);
 
-  // 🔒 TRAVA DE SEGURANÇA (BANCO DE DADOS)
+  // 🔒 TRAVA DE SEGURANÇA
   if (desafio.rodadasProcessadas?.includes(rodada)) {
     console.log("⚠️ Rodada já processada, ignorando");
     return;
   }
 
-  // marca como processada ANTES (anti-duplo clique)
   desafio.rodadasProcessadas.push(rodada);
   await desafio.save();
 
-  // 1️⃣ pegar todos os palpites da rodada
+  // ============================================
+  // 1️⃣ QUEM PALPITOU → regra normal
+  // ============================================
+
   const palpites = await Palpite.find({
     challengeId: desafio._id,
     rodada
@@ -1068,13 +1101,44 @@ async function fecharRodada(desafio) {
 
   const userIds = [...new Set(palpites.map(p => p.userId.toString()))];
 
-  // 2️⃣ avaliar cada jogador
   for (const userId of userIds) {
     await avaliarStatusDoJogador(userId, desafio._id);
   }
 
+  // ============================================
+  // 2️⃣ 🔥 PARTE NOVA — QUEM NÃO PALPITOU
+  // ============================================
+
+  const ativos = await PlayerChallenge.find({
+    challengeId: desafio._id,
+    status: "ativo"
+  });
+
+  for (const pc of ativos) {
+
+    const temPalpite = await Palpite.exists({
+      userId: pc.userId,
+      challengeId: desafio._id,
+      rodada
+    });
+
+    if (!temPalpite) {
+
+      pc.status = "eliminado";
+      pc.rodadaEliminacao = rodada;
+      pc.motivo = "nao_palpitou";
+
+      await pc.save();
+
+      console.log(
+        `❌ Usuário ${pc.userId} eliminado por NÃO palpitar na rodada ${rodada}`
+      );
+    }
+  }
+
   console.log("✅ Rodada avaliada com sucesso");
 }
+
 
 
 
