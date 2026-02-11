@@ -330,7 +330,7 @@ async function carregarContextoIndex() {
 
 function interpretarContextoIndex(contexto) {
    const { desafio, usuario } = contexto;
-   
+
 statusDesafioIndex = desafio.status;
 rodadaAtualIndex = desafio.rodadaAtual;
 
@@ -340,17 +340,19 @@ rodadaAtualIndex = desafio.rodadaAtual;
   // =====================================================
   // 🛑 BLOQUEIO DEFINITIVO — perdeu janela da 1ª rodada
   // =====================================================
-  if (bloqueioDefinitivo(usuario, desafio)) {
+if (bloqueioDefinitivo(usuario, desafio)) {
 
-    mostrarMensagem(
-      "⛔ Você não entrou no desafio a tempo. " +
-      "Aguarde o próximo desafio para participar."
-    );
+  mostrarMensagem(
+    "⛔ Você não entrou no desafio a tempo. " +
+    "Aguarde o próximo desafio para participar."
+  );
 
-    document.querySelector(".index-dashboard").style.display = "none";
+  // 👉 NÃO escondemos mais o dashboard
+  const dash = document.querySelector(".index-dashboard");
+  if (dash) dash.style.display = "";
 
-    return;
-  }
+  // ❌ NÃO TEM MAIS RETURN AQUI
+}
 
   // =====================================================
   // 🟢 PODE ENTRAR (mensagem atual mantida!)
