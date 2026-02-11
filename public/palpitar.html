@@ -112,7 +112,7 @@
 
     <div id="bloqueioEliminado">
     <div class="overlay-box">
-      <h2>❌ Você foi eliminado</h2>
+      <h2 id="tituloBloqueio">❌ Você foi eliminado</h2>
       <p id="mensagemEliminacao"></p>
     </div>
   </div>
@@ -538,7 +538,6 @@ function aplicarEstadoDoDesafio(desafio) {
 
 
   // ❌ usuário nao inscrito + desafio já andando
-// ❌ usuário nao inscrito + desafio já andando
 if (
   desafio.usuario?.status === "nao_inscrito" &&
   desafio.status !== "iniciando"
@@ -546,8 +545,12 @@ if (
 
   const overlay = document.getElementById("bloqueioEliminado");
   const msg = document.getElementById("mensagemEliminacao");
+  const titulo = document.getElementById("tituloBloqueio");
 
   overlay.style.display = "flex";
+
+  // 👉 DIFERENÇA PRINCIPAL
+  titulo.textContent = "🔒 Acesso restrito";
 
   msg.textContent =
     "⛔ Você não entrou no desafio a tempo. " +
