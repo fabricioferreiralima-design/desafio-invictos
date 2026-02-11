@@ -198,26 +198,22 @@ function bloqueioDefinitivo(usuario, desafio) {
 }
 
 
-  async function carregarContextoDoJogo() {
+async function carregarContextoDoJogoCompleto() {
   const token = localStorage.getItem("authToken");
 
-  if (!token) {
-    return null;
-  }
+  if (!token) return null;
 
   const res = await fetch("/api/jogo/contexto", {
-      headers: 
-        getAuthHeaders()
-      }
-  );
+    headers: getAuthHeaders()
+  });
 
   if (!res.ok) {
     throw new Error("Erro ao carregar contexto do jogo");
   }
 
-  const data = await res.json();
-  return data.desafio;
+  return await res.json(); // 👉 retorna { desafio, usuario }
 }
+
 
   // Destacar o link ativo no menu
   const paginaAtual = window.location.pathname.split("/").pop();
@@ -332,8 +328,8 @@ async function carregarContextoIndex() {
   }
 }
 
-function interpretarContextoIndex(data) {
-   const { desafio, usuario } = data;
+function interpretarContextoIndex(contexto) {
+   const { desafio, usuario } = contexto;
 
 statusDesafioIndex = data.desafio.status;
 rodadaAtualIndex = data.desafio.rodadaAtual;
@@ -455,7 +451,7 @@ if (desafio.status === "iniciando" || desafio.status === "ativo") {
       );
     }
 
-    return;
+    
   }
 }
 
@@ -585,20 +581,21 @@ function mostrarMensagem(texto) {
 
 document.addEventListener("DOMContentLoaded", async () => {
 
-  const contexto = await carregarContextoDoJogo();
+  const contexto = await carregarContextoDoJogoCompleto();
   if (!contexto) return;
 
-  // 1️⃣ Primeiro contexto e timeline
-  await carregarContextoIndex();
-  await carregarLinhaDoTempo(); 
+  // 👉 Agora sim temos usuario + desafio
+  interpretarContextoIndex(contexto);
 
-  // 2️⃣ Estatísticas dependem SÓ do status do DESAFIO
-  const status = contexto.status;
+  await carregarLinhaDoTempo();
 
-  if (status === "ativo" || status === "aguardando" || status === "finalizado") {
+  const status = contexto.desafio.status;
+
+  if (["ativo", "aguardando", "finalizado"].includes(status)) {
     await carregarEstatisticasIndex();
   }
 });
+
 
 
 document.addEventListener("desafioAlterado", async () => {
