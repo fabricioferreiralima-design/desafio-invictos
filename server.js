@@ -794,7 +794,7 @@ if (!jaExiste) {
 
     placar: foiPorWO
       ? "Você não realizou palpite nesta rodada"
-      : "Eliminado após resultado da rodada",
+      : "Você não palpitou.",
 
     status: "eliminado",
 
@@ -1919,20 +1919,37 @@ app.get("/admin/usuarios", auth, authAdmin, async (req, res) => {
 
       {
         $project: {
-          nome: 1,
-          sobrenome: 1,
-          username: 1,
-          email: 1,
-          dataNascimento: 1,
-          timeCoracao: 1,
-status: {
-  $ifNull: ["$pc.status", "nao_inscrito"]
-},
-rodadaEliminacao: "$pc.rodadaEliminacao",
-          role: 1,
-          createdAt: 1,
-          totalPalpites: 1
-        }
+  nome: 1,
+  sobrenome: 1,
+  username: 1,
+  email: 1,
+  dataNascimento: 1,
+  timeCoracao: 1,
+
+  status: {
+    $ifNull: ["$pc.status", "nao_inscrito"]
+  },
+
+  rodadaEliminacao: "$pc.rodadaEliminacao",
+
+  // 🔥 NOVO CAMPO
+  wo: {
+    $cond: [
+      {
+        $and: [
+          { $eq: ["$pc.status", "eliminado"] },
+          { $eq: ["$pc.motivo", "nao_palpitou"] }
+        ]
+      },
+      true,
+      false
+    ]
+  },
+
+  role: 1,
+  createdAt: 1,
+  totalPalpites: 1
+}
       },
       { $sort: { createdAt: 1 } }
     ]);

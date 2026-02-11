@@ -268,12 +268,31 @@
     </div>
   </div>
 
-  <!-- ✅ CARD ELIMINADOS SEPARADO -->
-  <div class="kpi-card">
-    <div class="kpi-title">Eliminados</div>
+   <!-- ✅ CARD ELIMINADOS SEPARADO -->
+<div class="kpi-card">
+  <div class="kpi-title">Eliminados</div>
+
+  <div style="display:flex; align-items:baseline; gap:8px;">
     <div class="kpi-value" id="kpiUsuariosEliminados">—</div>
-    <div class="kpi-sub">Já fora da competição</div>
+
+    <!-- 🔥 NOVO: nota de WO -->
+    <small id="notaWO"
+      style="
+        display:none;
+        color:#7c2d12;
+        background:#fff7ed;
+        border:1px solid #fed7aa;
+        padding:2px 6px;
+        border-radius:6px;
+        font-size:12px;
+      ">
+      🚫 <span id="totalWO">0</span> por WO
+    </small>
   </div>
+
+  <div class="kpi-sub">Já fora da competição</div>
+</div>
+
 
   <!-- ✅ CARD PALPITES -->
   <div class="kpi-card">
@@ -291,6 +310,28 @@
       <div class="info-box">
         <p><strong>Times mais escolhidos:</strong></p>
         <ul id="insightTimes"></ul>
+
+        <hr style="margin:12px 0;">
+
+<p><strong>🚫 Impacto do WO</strong></p>
+
+<ul>
+  <li>
+    Eliminados por WO na rodada atual:
+    <strong id="woRodadaAtual">—</strong>
+  </li>
+
+  <li>
+    % de WO sobre eliminados:
+    <strong id="percentWO">—</strong>
+  </li>
+</ul>
+
+<hr style="margin:12px 0;">
+
+<p><strong>📈 Histórico de WO por rodada</strong></p>
+
+<div id="historicoWO"></div>
 
         <p><strong>Paths idênticos:</strong></p>
         <ul id="insightPaths"></ul>
@@ -609,11 +650,220 @@ document.getElementById("kpiPalpitesTotal").textContent =
   document.getElementById("kpiUsuariosIniciaram").textContent =
   data.usuarios?.iniciaram ?? 0;
 
+  await atualizarNotaWO();
+  await calcularWOporRodada();
+await carregarHistoricoWO();
+
   } catch (err) {
     console.error(err);
     alert("Erro ao carregar dados do dashboard");
   }
 }
+
+async function atualizarNotaWO() {
+
+  try {
+    const res = await fetch("/admin/usuarios", {
+      headers: getAdminHeaders()
+    });
+
+    const usuarios = await res.json();
+
+    const totalWO = usuarios.filter(u =>
+      u.status === "eliminado" && u.wo === true
+    ).length;
+
+    const box = document.getElementById("notaWO");
+    const span = document.getElementById("totalWO");
+
+    if (!box || !span) return;
+
+    if (totalWO > 0) {
+      span.textContent = totalWO;
+      box.style.display = "inline-block";
+    } else {
+      box.style.display = "none";
+    }
+
+  } catch (err) {
+    console.error("Erro ao calcular WO:", err);
+  }
+}
+
+
+async function calcularWOporRodada() {
+
+  try {
+
+    const res = await fetch("/admin/usuarios", {
+      headers: getAdminHeaders()
+    });
+
+    const usuarios = await res.json();
+
+    // descobre rodada atual pelo dashboard já carregado
+    const rodadaAtual = Number(
+      document.getElementById("filtroRodadaPalpite")?.value ||
+      0
+    );
+
+    // se não tiver rodada selecionada,
+    // usa a maior rodada de eliminação existente
+    const rodadaRef = rodadaAtual ||
+      Math.max(...usuarios.map(u => u.rodadaEliminacao || 0));
+
+    const eliminadosRodada = usuarios.filter(u =>
+      u.status === "eliminado" &&
+      u.rodadaEliminacao === rodadaRef
+    );
+
+    const woRodada = eliminadosRodada.filter(u => u.wo).length;
+
+    const percentual =
+      eliminadosRodada.length
+        ? ((woRodada / eliminadosRodada.length) * 100).toFixed(1)
+        : 0;
+
+    document.getElementById("woRodadaAtual").textContent =
+      `${woRodada} de ${eliminadosRodada.length}`;
+
+    document.getElementById("percentWO").textContent =
+      `${percentual}%`;
+
+  } catch (err) {
+    console.error("Erro WO por rodada:", err);
+  }
+}
+
+async function carregarHistoricoWO() {
+
+  try {
+
+    const res = await fetch("/admin/usuarios", {
+      headers: getAdminHeaders()
+    });
+
+    const usuarios = await res.json();
+
+    // ============================
+    // 1) Agrupar por rodada
+    // ============================
+
+    const mapa = {};
+
+    usuarios.forEach(u => {
+
+      if (u.status !== "eliminado" || !u.rodadaEliminacao)
+        return;
+
+      const r = u.rodadaEliminacao;
+
+      if (!mapa[r]) {
+        mapa[r] = {
+          total: 0,
+          wo: 0
+        };
+      }
+
+      mapa[r].total++;
+
+      if (u.wo === true) {
+        mapa[r].wo++;
+      }
+
+    });
+
+    // ============================
+    // 2) Ordenar rodadas
+    // ============================
+
+    const rodadas = Object.keys(mapa)
+      .map(Number)
+      .sort((a, b) => a - b);
+
+    const container = document.getElementById("historicoWO");
+
+    if (!rodadas.length) {
+      container.innerHTML = "<p>Nenhum dado de WO ainda.</p>";
+      return;
+    }
+
+    // ============================
+    // 3) Render visual
+    // ============================
+
+    container.innerHTML = `
+
+      <table width="100%" cellpadding="6" style="font-size:13px;">
+        <thead>
+          <tr>
+            <th align="left">Rodada</th>
+            <th align="right">WO</th>
+            <th align="right">Total elim.</th>
+            <th align="right">%</th>
+            <th align="left">Visual</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${rodadas.map(r => {
+
+            const { total, wo } = mapa[r];
+
+            const perc = total
+              ? ((wo / total) * 100).toFixed(1)
+              : 0;
+
+            // barra visual
+            const largura = Math.min(perc, 100);
+
+            return `
+              <tr>
+                <td>${r}</td>
+
+                <td align="right">
+                  ${wo}
+                </td>
+
+                <td align="right">
+                  ${total}
+                </td>
+
+                <td align="right">
+                  ${perc}%
+                </td>
+
+                <td>
+                  <div style="
+                    background:#fee2e2;
+                    width:120px;
+                    height:8px;
+                    border-radius:4px;
+                    overflow:hidden;
+                  ">
+                    <div style="
+                      width:${largura}%;
+                      height:100%;
+                      background:#dc2626;
+                    "></div>
+                  </div>
+                </td>
+
+              </tr>
+            `;
+
+          }).join("")}
+        </tbody>
+      </table>
+
+    `;
+
+  } catch (err) {
+    console.error("Erro histórico WO:", err);
+  }
+
+}
+
 
 async function carregarPaths() {
   try {
@@ -1005,6 +1255,16 @@ async function carregarUsuarios() {
             <input type="number" id="filtroRodada" style="width:80px;">
           </label>
 
+          <label>
+  WO:
+  <select id="filtroWO">
+    <option value="">Todos</option>
+    <option value="sim">Somente WO</option>
+    <option value="nao">Somente resultado</option>
+  </select>
+</label>
+
+
           <button onclick="aplicarFiltrosUsuarios()">Aplicar</button>
           <button onclick="limparFiltrosUsuarios()">Limpar</button>
         </div>
@@ -1046,6 +1306,7 @@ function renderizarTabelaUsuarios(usuarios) {
           <th>Time</th>
           <th>Status</th>
           <th>Rodada Eliminação</th>
+          <th>WO?</th>
           <th>Palpites</th>
           <th>Perfil</th>
           <th>Criado em</th>
@@ -1062,6 +1323,14 @@ function renderizarTabelaUsuarios(usuarios) {
             <td>${u.timeCoracao || "-"}</td>
             <td>${u.status}</td>
             <td>${u.rodadaEliminacao ?? "-"}</td>
+            <td>
+  ${
+    u.status === "eliminado"
+      ? (u.wo ? "✅ Sim" : "❌ Não")
+      : ""
+  }
+</td>
+
             <td>${u.totalPalpites}</td>
             <td>${u.role}</td>
             <td>
@@ -1083,7 +1352,7 @@ function aplicarFiltrosUsuarios() {
   const role = document.getElementById("filtroRole").value;
   const time = document.getElementById("filtroTime").value.toLowerCase();
   const rodada = Number(document.getElementById("filtroRodada").value);
-
+  const filtroWO = document.getElementById("filtroWO").value;
   let filtrados = [...window.usuariosOriginais];
 
   if (busca) {
@@ -1113,6 +1382,18 @@ function aplicarFiltrosUsuarios() {
     filtrados = filtrados.filter(u => u.rodadaEliminacao === rodada);
   }
 
+    if (filtroWO === "sim") {
+    filtrados = filtrados.filter(u =>
+      u.status === "eliminado" && u.wo === true
+    );
+  }
+
+  if (filtroWO === "nao") {
+    filtrados = filtrados.filter(u =>
+      u.status === "eliminado" && u.wo === false
+    );
+  }
+
   renderizarTabelaUsuarios(filtrados);
 }
 
@@ -1122,6 +1403,7 @@ function limparFiltrosUsuarios() {
   document.getElementById("filtroRole").value = "";
   document.getElementById("filtroTime").value = "";
   document.getElementById("filtroRodada").value = "";
+  document.getElementById("filtroWO").value = "";
 
   renderizarTabelaUsuarios(window.usuariosOriginais);
 }
