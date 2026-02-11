@@ -146,6 +146,7 @@
   }
 
   const data = await res.json();
+   data.desafio.usuario = data.usuario;
   return data.desafio;
 }
 
