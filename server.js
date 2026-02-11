@@ -776,24 +776,33 @@ app.get("/api/linha-do-tempo", auth, async (req, res) => {
     // 5️⃣ 🔥 PARTE PRINCIPAL — ADICIONAR LINHA DE WO
     // =====================================================
 
-    if (
-      pc?.status === "eliminado" &&
-      pc?.motivo === "nao_palpitou"
-    ) {
-
+if (
+  pc?.status === "eliminado" &&
+  pc?.rodadaEliminacao
+) {
       const jaExiste = linhaDoTempo.some(
-        item => Number(item.rodada) === Number(pc.rodadaEliminacao)
-      );
+  item => Number(item.rodada) === Number(pc.rodadaEliminacao)
+);
 
-      if (!jaExiste) {
-        linhaDoTempo.push({
-          rodada: pc.rodadaEliminacao,
-          time: "—",
-          placar: "Você não realizou palpite nesta rodada",
-          status: "eliminado",
-          tipo: "nao_palpitou"
-        });
-      }
+if (!jaExiste) {
+
+  const foiPorWO = pc.motivo === "nao_palpitou";
+
+  linhaDoTempo.push({
+    rodada: pc.rodadaEliminacao,
+    time: "—",
+
+    placar: foiPorWO
+      ? "Você não realizou palpite nesta rodada"
+      : "Eliminado após resultado da rodada",
+
+    status: "eliminado",
+
+    tipo: foiPorWO
+      ? "nao_palpitou"
+      : "resultado"
+  });
+}
     }
 
     // ================================
