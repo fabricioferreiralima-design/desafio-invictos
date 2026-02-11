@@ -347,11 +347,11 @@ if (bloqueioDefinitivo(usuario, desafio)) {
     "Aguarde o próximo desafio para participar."
   );
 
-  // 👉 NÃO escondemos mais o dashboard
   const dash = document.querySelector(".index-dashboard");
   if (dash) dash.style.display = "";
 
-  // ❌ NÃO TEM MAIS RETURN AQUI
+  // 👉 AGORA TEM RETURN CONTROLADO
+  return;
 }
 
   // =====================================================
@@ -457,9 +457,10 @@ if (desafio.status === "iniciando" || desafio.status === "ativo") {
   }
 }
 
-
-  // fallback de segurança
+// fallback só se NENHUMA mensagem tiver sido exibida
+if (!document.getElementById("statusJogador").textContent) {
   mostrarMensagem("⚠️ Estado do desafio desconhecido.");
+}
 }
 
 function getAuthHeaders() {
@@ -508,8 +509,9 @@ async function carregarEstatisticasIndex() {
     document.getElementById("statIniciaram").textContent =
       data.jogadores.iniciaram;
 
-    document.getElementById("statVivos").textContent =
-      data.jogadores.vivos;
+// Backend já manda vivos reais (quem já teve jogo resolvido)
+document.getElementById("statVivos").textContent =
+  data.jogadores.vivos;
 
       // ===== PENDENTES (novo) =====
 const pendBox = document.getElementById("statPendentesBox");
