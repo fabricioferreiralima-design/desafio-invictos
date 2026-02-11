@@ -258,10 +258,11 @@ Object.keys(rodadas).forEach(r => {
 
       let jogadorEliminado = false;
 
-      async function verificarStatusJogadorSimulador() {
+ async function verificarStatusJogadorSimulador() {
 
   const overlay = document.getElementById("bloqueioEliminado");
   const msg = document.getElementById("mensagemEliminacao");
+  const titulo = overlay.querySelector("h2");
 
   jogadorEliminado = false;
   overlay.style.display = "none";
@@ -278,7 +279,9 @@ Object.keys(rodadas).forEach(r => {
     const usuario = data.usuario;
     const desafio = data.desafio;
 
-    // ❌ BLOQUEIO DEFINITIVO
+    // =====================================================
+    // ❌ CASO 1 — NÃO INSCRITO E DESAFIO JÁ ANDANDO
+    // =====================================================
     if (
       usuario.status === "nao_inscrito" &&
       desafio.status !== "iniciando"
@@ -288,14 +291,19 @@ Object.keys(rodadas).forEach(r => {
 
       overlay.style.display = "flex";
 
+      // 👉 TÍTULO DIFERENTE DO ELIMINADO
+      titulo.textContent = "🔒 Acesso restrito";
+
       msg.textContent =
-        "🔒 Você não entrou no desafio a tempo. " +
+        "Você não entrou no desafio a tempo. " +
         "Aguarde o próximo desafio para participar.";
 
       return;
     }
 
-    // ❌ ELIMINADO normal
+    // =====================================================
+    // ❌ CASO 2 — ELIMINADO REAL
+    // =====================================================
     if (
       usuario.status === "eliminado" &&
       typeof usuario.rodadaEliminacao === "number" &&
@@ -306,18 +314,24 @@ Object.keys(rodadas).forEach(r => {
 
       overlay.style.display = "flex";
 
+      // 👉 TÍTULO ORIGINAL DO ELIMINADO
+      titulo.textContent = "❌ Você foi eliminado";
+
       msg.textContent =
         `Você foi eliminado na rodada ${usuario.rodadaEliminacao}.`;
 
       return;
     }
 
+    // =====================================================
+    // ✅ CASO LIBERADO
+    // =====================================================
+    titulo.textContent = "❌ Você foi eliminado"; // deixa padrão para próximos usos
+
   } catch (err) {
     console.error(err);
   }
 }
-
-
 
       // ==== FUNÇÃO UNIFICADA DE SELEÇÃO ====
   function selecionarTime(rodada, timeEscolhido) {

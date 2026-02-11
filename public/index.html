@@ -409,42 +409,54 @@ rodadaAtualIndex = data.desafio.rodadaAtual;
   }
 
   // 🟢 DESAFIO INICIANDO ou ATIVO
+// 🟢 DESAFIO INICIANDO ou ATIVO
 if (desafio.status === "iniciando" || desafio.status === "ativo") {
 
   // =====================================================
-  // 1) PRIMEIRO: SE JÁ PALPITOU NA RODADA ATUAL
+  // 👉 CASO ESPECIAL: usuário ainda NÃO inscrito
   // =====================================================
-  if (usuario.jaPalpitou) {
-    mostrarMensagem(
-      `✅ Boa! Você já palpitou na rodada ${desafio.rodadaAtual}. Agora é orar, fera.`
-    );
-    return;
-  }
+  if (usuario.status === "nao_inscrito") {
 
-  // =====================================================
-  // 2) DEPOIS: SE NÃO PALPITOU E TEM JOGO ADIADO
-  // =====================================================
-  if (usuario.pendencia && usuario.pendencia.rodada) {
-    mostrarMensagem(
-      `🟢 Você está vivo! Mas se liga que ainda tem jogo adiado da Rodada ${usuario.pendencia.rodada}. Bora palpitar a próxima rodada!`
-    );
-    return;
-  }
-
-  // =====================================================
-  // 3) FLUXO NORMAL DE QUEM NÃO PALPITOU
-  // =====================================================
-  if (desafio.status === "iniciando") {
     mostrarMensagem(
       "🔥 Chega mais! O desafio já vai começar. É hora de palpitar."
     );
-  } else {
-    mostrarMensagem(
-      `⚽ Ufa, você sobreviveu à rodada ${desafio.rodadaAtual - 1}. Bora pra próxima. Hora de palpitar a rodada ${desafio.rodadaAtual}.`
-    );
-  }
 
-  return;
+    // ⚠️ NÃO damos return aqui para:
+    // - permitir timeline
+    // - permitir estatísticas
+
+  } else {
+
+    // =====================================================
+    // FLUXO NORMAL DE PARTICIPANTE
+    // =====================================================
+
+    if (usuario.jaPalpitou) {
+      mostrarMensagem(
+        `✅ Boa! Você já palpitou na rodada ${desafio.rodadaAtual}. Agora é orar, fera.`
+      );
+      return;
+    }
+
+    if (usuario.pendencia && usuario.pendencia.rodada) {
+      mostrarMensagem(
+        `🟢 Você está vivo! Mas se liga que ainda tem jogo adiado da Rodada ${usuario.pendencia.rodada}. Bora palpitar a próxima rodada!`
+      );
+      return;
+    }
+
+    if (desafio.status === "iniciando") {
+      mostrarMensagem(
+        "🔥 Chega mais! O desafio já vai começar. É hora de palpitar."
+      );
+    } else {
+      mostrarMensagem(
+        `⚽ Ufa, você sobreviveu à rodada ${desafio.rodadaAtual - 1}. Bora pra próxima. Hora de palpitar a rodada ${desafio.rodadaAtual}.`
+      );
+    }
+
+    return;
+  }
 }
 
 

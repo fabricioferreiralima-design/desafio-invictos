@@ -537,18 +537,23 @@ function aplicarEstadoDoDesafio(desafio) {
 
 
   // ❌ usuário nao inscrito + desafio já andando
+// ❌ usuário nao inscrito + desafio já andando
 if (
   desafio.usuario?.status === "nao_inscrito" &&
   desafio.status !== "iniciando"
 ) {
 
-  contador.textContent =
+  const overlay = document.getElementById("bloqueioEliminado");
+  const msg = document.getElementById("mensagemEliminacao");
+
+  overlay.style.display = "flex";
+
+  msg.textContent =
     "⛔ Você não entrou no desafio a tempo. " +
     "Aguarde o próximo para participar.";
 
   return false;
 }
-
   // 👉 Se o overlay de eliminado estiver visível, NÃO sobrescreve nada
   const overlay = document.getElementById("bloqueioEliminado");
   if (overlay.style.display === "flex") {
