@@ -672,37 +672,25 @@ app.get("/api/linha-do-tempo", auth, async (req, res) => {
       return res.json([]);
     }
 
-    // ✅ FILTRO CORRETO
+    // ================================
+    // 1️⃣ BUSCAR PALPITES DO DESAFIO
+    // ================================
     const palpites = await Palpite.find({
       userId,
       challengeId: desafioAtual._id
     }).sort({ rodada: 1 });
 
-   // 🔥 NOVO: verificar se foi eliminado por não palpitar
-const pc = await PlayerChallenge.findOne({
-  userId,
-  challengeId: desafioAtual._id
-});
+    // ================================
+    // 2️⃣ BUSCAR STATUS NO PLAYER CHALLENGE
+    // ================================
+    const pc = await PlayerChallenge.findOne({
+      userId,
+      challengeId: desafioAtual._id
+    });
 
-// se não tem palpites MAS foi eliminado por nao_palpitou
-if (!palpites.length && pc?.status === "eliminado" && pc?.motivo === "nao_palpitou") {
-  return res.json([
-    {
-      rodada: pc.rodadaEliminacao,
-      time: "—",
-      placar: "Você não realizou palpite nesta rodada",
-      status: "eliminado",
-      tipo: "nao_palpitou"
-    }
-  ]);
-}
-
-if (!palpites.length) {
-  return res.json([]);
-}
-
-
-      // 3️⃣ Buscar jogos do cache (ou API se necessário)
+    // ================================
+    // 3️⃣ BUSCAR JOGOS (CACHE OU API)
+    // ================================
     const cacheKey = "jogos-brasileirao-2025";
     let dados = cache.get(cacheKey);
 
@@ -724,24 +712,23 @@ if (!palpites.length) {
 
     const jogos = dados.response || [];
 
-    // 4️⃣ Montar a linha do tempo processada
-    const linhaDoTempo = palpites.map(p => {
+    // ================================
+    // 4️⃣ MONTAR LINHA NORMAL DOS PALPITES
+    // ================================
+    let linhaDoTempo = palpites.map(p => {
       const rodada = Number(p.rodada);
       const timeEscolhido = p.time;
 
-      // acha os jogos da rodada
       const jogosRodada = jogos.filter(j =>
         j.league &&
         j.league.round === `Regular Season - ${rodada}`
       );
 
-      // acha o jogo do time escolhido
       const jogo = jogosRodada.find(j =>
         j.teams.home.name === timeEscolhido ||
         j.teams.away.name === timeEscolhido
       );
 
-      // se não achou jogo (raro, mas possível)
       if (!jogo) {
         return {
           rodada,
@@ -757,25 +744,14 @@ if (!palpites.length) {
       const golsAway = jogo.goals.away;
 
       let status = "aguardando";
-      let placar = "Aguardando jogo...";
+      let placar = "⏳ Aguardando jogo...";
 
-// 🔥 caso seja linha de nao_palpitou (proteção futura)
-if (p.tipo === "nao_palpitou") {
-  return {
-    rodada: p.rodada,
-    time: "—",
-    placar: "Você não realizou palpite",
-    status: "eliminado"
-  };
-}
-
-
-      // jogo já aconteceu?
       if (golsHome !== null && golsAway !== null) {
         placar = `${home} ${golsHome} x ${golsAway} ${away}`;
 
         const golsTime =
           timeEscolhido === home ? golsHome : golsAway;
+
         const golsAdv =
           timeEscolhido === home ? golsAway : golsHome;
 
@@ -784,7 +760,7 @@ if (p.tipo === "nao_palpitou") {
         } else if (golsTime < golsAdv) {
           status = "eliminado";
         } else {
-          status = "sobreviveu"; // empate
+          status = "sobreviveu"; // empate = sobrevive
         }
       }
 
@@ -796,7 +772,38 @@ if (p.tipo === "nao_palpitou") {
       };
     });
 
-    // 5️⃣ Retorna tudo pronto
+    // =====================================================
+    // 5️⃣ 🔥 PARTE PRINCIPAL — ADICIONAR LINHA DE WO
+    // =====================================================
+
+    if (
+      pc?.status === "eliminado" &&
+      pc?.motivo === "nao_palpitou"
+    ) {
+
+      const jaExiste = linhaDoTempo.some(
+        item => Number(item.rodada) === Number(pc.rodadaEliminacao)
+      );
+
+      if (!jaExiste) {
+        linhaDoTempo.push({
+          rodada: pc.rodadaEliminacao,
+          time: "—",
+          placar: "Você não realizou palpite nesta rodada",
+          status: "eliminado",
+          tipo: "nao_palpitou"
+        });
+      }
+    }
+
+    // ================================
+    // 6️⃣ ORDENAR NOVAMENTE
+    // ================================
+    linhaDoTempo.sort((a, b) => a.rodada - b.rodada);
+
+    // ================================
+    // 7️⃣ RETORNO FINAL
+    // ================================
     res.json(linhaDoTempo);
 
   } catch (err) {
@@ -804,6 +811,7 @@ if (p.tipo === "nao_palpitou") {
     res.status(500).json({ error: "Erro ao gerar linha do tempo" });
   }
 });
+
 
 
 
