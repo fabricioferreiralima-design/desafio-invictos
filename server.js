@@ -2112,7 +2112,10 @@ const iniciaram = iniciaramIds.length;
       status: "eliminado"
     });
 
-    const vivos = iniciaram - eliminados;
+    const vivos = await PlayerChallenge.countDocuments({
+  challengeId: desafio._id,
+  status: "ativo"
+});
 
     const percentualVivos =
       iniciaram > 0 ? Math.round((vivos / iniciaram) * 100) : 0;
