@@ -2109,14 +2109,16 @@ const iniciaram = iniciaramIds.length;
 
 
     // 🔁 eliminados DO DESAFIO
-    const eliminados = await PlayerChallenge.countDocuments({
-      challengeId: desafio._id,
-      status: "eliminado"
-    });
-
-    const vivos = await PlayerChallenge.countDocuments({
+   const eliminados = await PlayerChallenge.countDocuments({
   challengeId: desafio._id,
-  status: "ativo"
+  status: "eliminado",
+  userId: { $in: iniciaramIds }
+});
+
+   const vivos = await PlayerChallenge.countDocuments({
+  challengeId: desafio._id,
+  status: "ativo",
+  userId: { $in: iniciaramIds }
 });
 
     const percentualVivos =
