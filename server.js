@@ -1490,14 +1490,16 @@ app.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
    // 2️⃣ Eliminados NO DESAFIO (PlayerChallenge)
 const eliminados = await PlayerChallenge.countDocuments({
   challengeId: desafio._id,
-  status: "eliminado"
+  status: "eliminado",
+  userId: { $in: iniciaram }
 });
 
 
    // 3️⃣ Vivos (REGRA CORRETA)
 const vivos = await PlayerChallenge.countDocuments({
   challengeId: desafio._id,
-  status: "ativo"
+  status: "ativo",
+  userId: { $in: iniciaram }
 });
     // ==========================
 // 3.1️⃣ Cálculo de PENDENTES (regra oficial)
