@@ -2316,6 +2316,48 @@ app.get("/admin/rodada/:rodada/pendencias", auth, authAdmin, async (req, res) =>
   }
 });
 
+app.post("/admin/corrigir-wo", auth, authAdmin, async (req, res) => {
+  try {
+
+    const desafio = await resolverDesafioAdmin(req);
+
+    const eliminados = await PlayerChallenge.find({
+      challengeId: desafio._id,
+      status: "eliminado"
+    });
+
+    let corrigidos = 0;
+
+    for (const pc of eliminados) {
+
+      // já está marcado como WO? ignora
+      if (pc.motivo === "nao_palpitou") continue;
+
+      const temPalpite = await Palpite.exists({
+        userId: pc.userId,
+        challengeId: desafio._id,
+        rodada: pc.rodadaEliminacao
+      });
+
+      // 🔥 SE NÃO TEM PALPITE NA RODADA QUE FOI ELIMINADO
+      if (!temPalpite) {
+        pc.motivo = "nao_palpitou";
+        await pc.save();
+        corrigidos++;
+      }
+    }
+
+    res.json({
+      ok: true,
+      corrigidos
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
   // 8️⃣ Iniciar servidor
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
