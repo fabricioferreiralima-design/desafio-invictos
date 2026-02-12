@@ -2181,11 +2181,12 @@ const iniciaram = iniciaramIds.length;
       rodada
     });
 
-    const eliminadosRodada = await PlayerChallenge.countDocuments({
-      challengeId: desafio._id,
-      status: "eliminado",
-      rodadaEliminacao: rodada
-    });
+ const eliminadosRodada = await PlayerChallenge.countDocuments({
+  challengeId: desafio._id,
+  status: "eliminado",
+  rodadaEliminacao: rodada,
+  userId: { $in: iniciaramIds }
+});
 
     const topTimes = await Palpite.aggregate([
       {
