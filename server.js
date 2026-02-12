@@ -1488,18 +1488,11 @@ app.get("/admin/dashboard", auth, authAdmin, async (req, res) => {
     const totalIniciaram = iniciaram.length;
 
    // 2️⃣ Eliminados NO DESAFIO (PlayerChallenge)
-// 👇 SÓ é eliminado quem:
-// - tem PlayerChallenge eliminado
-// - E fez pelo menos 1 palpite nesse desafio
 const eliminados = await PlayerChallenge.countDocuments({
   challengeId: desafio._id,
-  status: "eliminado",
-  userId: {
-    $in: await Palpite.distinct("userId", {
-      challengeId: desafio._id
-    })
-  }
+  status: "eliminado"
 });
+
 
     // ==========================
     // 3️⃣ Vivos
@@ -2105,31 +2098,13 @@ app.get("/api/index/estatisticas", auth, async (req, res) => {
     // =====================
     // JOGADORES
     // =====================
-    const usuarios = await User.aggregate([
-      {
-        $lookup: {
-          from: "palpites",
-          let: { userId: "$_id" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$userId", "$$userId"] },
-                    { $eq: ["$challengeId", desafio._id] }
-                  ]
-                }
-              }
-            }
-          ],
-          as: "palpites"
-        }
-      }
-    ]);
+const iniciaramIds = await Palpite.distinct("userId", {
+  challengeId: desafio._id,
+  rodada: desafio.rodadaInicial
+});
 
-    const iniciaram = usuarios.filter(u =>
-      u.palpites.some(p => p.rodada === desafio.rodadaInicial)
-    ).length;
+const iniciaram = iniciaramIds.length;
+
 
     // 🔁 eliminados DO DESAFIO
     const eliminados = await PlayerChallenge.countDocuments({
