@@ -1494,11 +1494,11 @@ const eliminados = await PlayerChallenge.countDocuments({
 });
 
 
-    // ==========================
-    // 3️⃣ Vivos
-    // ==========================
-    const vivos = Math.max(totalIniciaram - eliminados, 0);
-
+   // 3️⃣ Vivos (REGRA CORRETA)
+const vivos = await PlayerChallenge.countDocuments({
+  challengeId: desafio._id,
+  status: "ativo"
+});
     // ==========================
 // 3.1️⃣ Cálculo de PENDENTES (regra oficial)
 // ==========================
