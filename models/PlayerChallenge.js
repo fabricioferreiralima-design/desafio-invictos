@@ -33,8 +33,12 @@ const PlayerChallengeSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
 
+  motivo: {
+  type: String,
+  default: null
+}
 });
 
 // 🔐 garante 1 registro por usuário + desafio
