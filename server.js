@@ -206,7 +206,7 @@ async function avaliarStatusDoJogador(userId, challengeId) {
 
       pc.status = "eliminado";
       pc.rodadaEliminacao = rodada;
-
+pc.motivo = "resultado";
       await pc.save();
 
       // ❌ REMOVIDO O RETURN AQUI
