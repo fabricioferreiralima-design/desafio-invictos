@@ -180,14 +180,29 @@
   });
 
   if (jogosRodada.length) {
-    jogosRodada.sort((a,b)=> new Date(a.fixture.date)-new Date(b.fixture.date));
-    deadline = new Date(jogosRodada[0].fixture.date);
-    iniciarContagemRegressiva();
-  } else {
-    deadline = null;
-    clearInterval(intervaloContagem);
-    document.getElementById("contador").textContent = "";
-  }
+   // separar jogos com data e sem data
+const comData = jogosRodada.filter(j => !jogoSemDataDefinida(j));
+const semData = jogosRodada.filter(j => jogoSemDataDefinida(j));
+
+// ordenar apenas os que têm data
+comData.sort((a,b)=>
+  new Date(a.fixture.date) - new Date(b.fixture.date)
+);
+
+// junta tudo: jogos válidos primeiro, adiados depois
+jogosRodada = [...comData, ...semData];
+
+// deadline só considera jogos com data definida
+if (comData.length) {
+  deadline = new Date(comData[0].fixture.date);
+  iniciarContagemRegressiva();
+} else {
+  deadline = null;
+  clearInterval(intervaloContagem);
+  document.getElementById("contador").textContent =
+    "⏳ Aguardando definição da rodada";
+}
+  } 
 
   await carregarPalpitesAnteriores();
   exibirRodada();
@@ -274,6 +289,7 @@ if (data.status === "eliminado" && data.rodadaEliminacao !== null) {
 
   function iniciarContagemRegressiva() {
     const c = document.getElementById("contador");
+      clearInterval(intervaloContagem);
     intervaloContagem = setInterval(()=>{
       const diff = deadline - new Date();
      const h=Math.floor(diff/(1000*60*60)), m=Math.floor((diff%(1000*60*60))/(1000*60)), s=Math.floor((diff%(1000*60))/1000);
@@ -295,8 +311,16 @@ if (data.status === "eliminado" && data.rodadaEliminacao !== null) {
 
   jogosRodada.forEach(j=>{
     const div=document.createElement("div"); div.className="jogo";
-    const dh = new Date(j.fixture.date);
-    const data = dh.toLocaleDateString('pt-BR'), hora=dh.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    let data, hora;
+
+if (jogoSemDataDefinida(j)) {
+  data = "Data indefinida";
+  hora = "";
+} else {
+  const dh = new Date(j.fixture.date);
+  data = dh.toLocaleDateString('pt-BR');
+  hora = dh.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
     const h=j.teams.home.name, a=j.teams.away.name;
 
     // agora avaliamos desativação consultando timesJaUsados E advBloqueados
@@ -331,7 +355,7 @@ const isAwayDesativ =
     if (isAwayDesativ) awayClasses.push("desativado");
 
 div.innerHTML = `
-  <div class="data-hora">${data} - ${hora}</div>
+  <div class="data-hora">${data}${hora ? " - "+hora : ""}</div>
 
   <div class="linha-confronto">
 
@@ -612,6 +636,11 @@ function mostrarToast(mensagem, tipo = "sucesso", actionsHTML = "") {
   }, 10);
 
   requestAnimationFrame(() => {});
+}
+
+function jogoSemDataDefinida(jogo) {
+  const status = jogo?.fixture?.status?.short;
+  return ["PST", "TBD"].includes(status);
 }
 
 
