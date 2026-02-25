@@ -223,11 +223,17 @@
 
     // 🔥 ordenar jogos de cada rodada por data
 Object.keys(rodadas).forEach(r => {
-  rodadas[r].sort(
-    (a, b) => new Date(a.fixture.date) - new Date(b.fixture.date)
-  );
-});
 
+  const comData = rodadas[r].filter(j => !jogoSemDataDefinida(j));
+  const semData = rodadas[r].filter(j => jogoSemDataDefinida(j));
+
+  comData.sort((a,b)=>
+    new Date(a.fixture.date) - new Date(b.fixture.date)
+  );
+
+  rodadas[r] = [...comData, ...semData];
+
+});
 
     exibirRodada();
     await verificarStatusJogadorSimulador();
@@ -452,10 +458,19 @@ Object.keys(rodadas).forEach(r => {
           const divJogo = document.createElement("div");
           divJogo.className = "jogo";
 
-          const dataHora = new Date(jogo.fixture.date);
-          const dataTexto = dataHora.toLocaleDateString('pt-BR');
-          const horaTexto = dataHora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          let dataTexto, horaTexto;
 
+if (jogoSemDataDefinida(jogo)) {
+  dataTexto = "Data indefinida";
+  horaTexto = "";
+} else {
+  const dataHora = new Date(jogo.fixture.date);
+  dataTexto = dataHora.toLocaleDateString('pt-BR');
+  horaTexto = dataHora.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
           const home = jogo.teams.home.name;
           const away = jogo.teams.away.name;
 
@@ -504,7 +519,7 @@ Object.keys(rodadas).forEach(r => {
 
         divJogo.innerHTML = `
     <div class="data-hora">
-      ${dataTexto} - ${horaTexto}
+     ${dataTexto}${horaTexto ? " - " + horaTexto : ""}
     </div>
 
     <div class="linha-confronto">
@@ -732,6 +747,10 @@ Object.keys(rodadas).forEach(r => {
     }, 1400);
   }
 
+  function jogoSemDataDefinida(jogo) {
+  const status = jogo?.fixture?.status?.short;
+  return ["PST", "TBD"].includes(status);
+}
 
   // ==== INICIALIZAÇÃO ====
   (async function init() {
