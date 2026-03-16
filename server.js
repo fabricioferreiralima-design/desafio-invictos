@@ -572,7 +572,7 @@ if (pc.status === "eliminado") {
       });
     }
 
-    // ❌ enfrentar adversário > 3x
+    // ❌ enfrentar adversário > 2x
     const contadorAdversarios = {};
 
     for (const p of palpitesOutros) {
@@ -597,9 +597,9 @@ if (pc.status === "eliminado") {
         ? jogo.teams.away.name
         : jogo.teams.home.name;
 
-    if ((contadorAdversarios[adversarioAtual] || 0) >= 3) {
+    if ((contadorAdversarios[adversarioAtual] || 0) >= 2) {
       return res.status(400).json({
-        error: `Você já enfrentou ${adversarioAtual} 3 vezes.`
+        error: `Você já enfrentou ${adversarioAtual} 2 vezes.`
       });
     }
 

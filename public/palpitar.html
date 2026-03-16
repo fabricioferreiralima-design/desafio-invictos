@@ -307,7 +307,7 @@ if (data.status === "eliminado" && data.rodadaEliminacao !== null) {
     .filter(([r])=>parseInt(r)!==rodadaFixa).map(([,t])=>t);
 
   // adversários bloqueados em função do contador global
-  const advBloqueados = Object.keys(contadorAdversarios).filter(t=>contadorAdversarios[t]>=3);
+  const advBloqueados = Object.keys(contadorAdversarios).filter(t=>contadorAdversarios[t]>=2);
 
   jogosRodada.forEach(j=>{
     const div=document.createElement("div"); div.className="jogo";
@@ -330,13 +330,13 @@ let motivoAway = "";
 if (timesJaUsados.includes(h)) {
   motivoHome = "⚠️ Time já escolhido em outra rodada";
 } else if (advBloqueados.includes(a)) {
-  motivoHome = "🚫 Você já enfrentou esse adversário 3 vezes";
+  motivoHome = "🚫 Você já enfrentou esse adversário 2 vezes";
 }
 
 if (timesJaUsados.includes(a)) {
   motivoAway = "⚠️ Time já escolhido em outra rodada";
 } else if (advBloqueados.includes(h)) {
-  motivoAway = "🚫 Você já enfrentou esse adversário 3 vezes";
+  motivoAway = "🚫 Você já enfrentou esse adversário 2 vezes";
 }
 
 const isHomeDesativ =

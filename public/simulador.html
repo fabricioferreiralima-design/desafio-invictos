@@ -427,7 +427,7 @@ Object.keys(rodadas).forEach(r => {
         const timesJaUsados = Object.entries(timesSelecionadosPorRodada)
           .filter(([r]) => parseInt(r) !== rodadaAtual)
           .map(([, t]) => t);
-        const limiteAdversario = 3;
+        const limiteAdversario = 2;
         const adversariosBloqueados = Object.keys(contadorAdversarios)
           .filter(t => contadorAdversarios[t] >= limiteAdversario);
 
@@ -505,14 +505,14 @@ if (jogoSemDataDefinida(jogo)) {
       motivoHome = "⚠️ Time já escolhido em outra rodada";
     }
     if (adversariosBloqueados.includes(away)) {
-      motivoHome = "🚫 Adversário já enfrentado 3 vezes";
+      motivoHome = "🚫 Adversário já enfrentado 2 vezes";
     }
 
     if (timesJaUsados.includes(away)) {
       motivoAway = "⚠️ Time já escolhido em outra rodada";
     }
     if (adversariosBloqueados.includes(home)) {
-      motivoAway = "🚫 Adversário já enfrentado 3 vezes";
+      motivoAway = "🚫 Adversário já enfrentado 2 vezes";
     }
   }
 
@@ -645,7 +645,7 @@ if (jogoSemDataDefinida(jogo)) {
         Object.entries(contadorAdversarios).sort((a,b) => b[1]-a[1]).forEach(([adv,count]) => {
           const li = document.createElement("li");
           li.textContent = `${adv}: ${count}x`;
-          if (count >= 3) li.style.color = "red";
+          if (count >= 2) li.style.color = "red";
           listaAdv.appendChild(li);
         });
       }
